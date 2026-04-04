@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "prisma generate && tsc",
-    "start": "npx prisma migrate deploy && node dist/index.js",
+    "start": "npm run prisma:seed && node dist/index.js",
     "migrate:deploy": "prisma migrate deploy",
     "seed:coa": "npx tsx prisma/seeds/chart-of-accounts.ts && npx tsx prisma/seeds/chart-of-accounts-expanded.ts && npx tsx prisma/seeds/chart-of-accounts-comprehensive.ts",
     "seed:app": "npx tsx src/prisma/seed.ts",
