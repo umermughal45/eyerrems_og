@@ -1,0 +1,209 @@
+{
+  "properties": {
+    "create": {
+      "method": "POST",
+      "endpoint": "/api/properties",
+      "headers": {
+        "Authorization": "Bearer <token>",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "name": "Sunset Apartments",
+        "title": "Luxury Residential Complex",
+        "type": "Residential",
+        "address": "123 Main Street",
+        "city": "Karachi",
+        "location": "DHA Phase 5",
+        "size": 50000,
+        "status": "Vacant",
+        "description": "Modern residential complex with 50 units",
+        "yearBuilt": 2020,
+        "totalArea": 50000,
+        "totalUnits": 50,
+        "ownerName": "ABC Real Estate",
+        "ownerPhone": "+92-300-1234567",
+        "rentAmount": 50000,
+        "securityDeposit": 100000,
+        "rentEscalationPercentage": 5
+      }
+    },
+    "update": {
+      "method": "PUT",
+      "endpoint": "/api/properties/:id",
+      "body": {
+        "status": "Occupied",
+        "rentAmount": 55000
+      }
+    },
+    "assignTenant": {
+      "method": "POST",
+      "endpoint": "/api/properties/:id/assign-tenant",
+      "body": {
+        "tenantId": "tenant-uuid",
+        "leaseId": "lease-uuid",
+        "leaseStart": "2024-01-01T00:00:00Z",
+        "leaseEnd": "2024-12-31T23:59:59Z",
+        "monthlyRent": 50000
+      }
+    },
+    "addExpense": {
+      "method": "POST",
+      "endpoint": "/api/properties/:id/expenses",
+      "body": {
+        "category": "maintenance",
+        "amount": 15000,
+        "date": "2024-01-15T00:00:00Z",
+        "description": "AC repair and servicing"
+      }
+    },
+    "createMaintenance": {
+      "method": "POST",
+      "endpoint": "/api/properties/:id/maintenance",
+      "body": {
+        "tenantId": "tenant-uuid",
+        "unitId": "unit-uuid",
+        "issueTitle": "AC Not Working",
+        "issueDescription": "AC unit in bedroom is not cooling properly",
+        "priority": "high"
+      }
+    }
+  },
+  "finance": {
+    "createLedger": {
+      "method": "POST",
+      "endpoint": "/api/finance/ledger",
+      "body": {
+        "referenceType": "expense",
+        "category": "expense",
+        "amount": 10000,
+        "date": "2024-01-15T00:00:00Z",
+        "description": "Office supplies",
+        "notes": "Monthly office supplies purchase"
+      }
+    },
+    "getSummary": {
+      "method": "GET",
+      "endpoint": "/api/finance/summary?startDate=2024-01-01&endDate=2024-12-31"
+    },
+    "syncInvoice": {
+      "method": "POST",
+      "endpoint": "/api/finance/sync/invoice/:invoiceId"
+    },
+    "syncPayment": {
+      "method": "POST",
+      "endpoint": "/api/finance/sync/payment/:paymentId"
+    }
+  },
+  "crm": {
+    "createLead": {
+      "method": "POST",
+      "endpoint": "/api/crm/leads",
+      "body": {
+        "name": "John Doe",
+        "email": "john@example.com",
+        "phone": "+92-300-1234567",
+        "source": "website",
+        "priority": "high",
+        "score": 85,
+        "interest": "rent",
+        "interestType": "residential",
+        "budget": "50000-70000",
+        "expectedCloseDate": "2024-02-15T00:00:00Z",
+        "followUpDate": "2024-01-20T00:00:00Z"
+      }
+    },
+    "createClient": {
+      "method": "POST",
+      "endpoint": "/api/crm/clients",
+      "body": {
+        "name": "John Doe",
+        "email": "john@example.com",
+        "phone": "+92-300-1234567",
+        "clientType": "individual",
+        "clientCategory": "regular",
+        "propertyInterest": "rent"
+      }
+    },
+    "createDeal": {
+      "method": "POST",
+      "endpoint": "/api/crm/deals",
+      "body": {
+        "title": "Apartment Rental Deal",
+        "clientId": "client-uuid",
+        "propertyId": "property-uuid",
+        "dealType": "rental",
+        "value": 600000,
+        "stage": "negotiation",
+        "probability": 75,
+        "commissionRate": 2.5,
+        "expectedClosingDate": "2024-02-15T00:00:00Z"
+      }
+    },
+    "addCommunication": {
+      "method": "POST",
+      "endpoint": "/api/crm/communications",
+      "body": {
+        "leadId": "lead-uuid",
+        "channel": "phone",
+        "activityType": "call",
+        "content": "Discussed property requirements and scheduled site visit",
+        "nextFollowUpDate": "2024-01-25T00:00:00Z"
+      }
+    }
+  },
+  "tenantPortal": {
+    "createComplaint": {
+      "method": "POST",
+      "endpoint": "/api/tenant-portal/complaints",
+      "body": {
+        "propertyId": "property-uuid",
+        "issueTitle": "Water Leakage",
+        "issueDescription": "Water leaking from ceiling in living room",
+        "priority": "urgent"
+      }
+    },
+    "viewInvoices": {
+      "method": "GET",
+      "endpoint": "/api/tenant-portal/invoices"
+    },
+    "uploadCNIC": {
+      "method": "POST",
+      "endpoint": "/api/tenant-portal/upload-cnic",
+      "headers": {
+        "Content-Type": "multipart/form-data"
+      },
+      "body": {
+        "file": "<file>"
+      }
+    },
+    "payRent": {
+      "method": "POST",
+      "endpoint": "/api/tenant-portal/pay-rent",
+      "body": {
+        "invoiceId": "invoice-uuid",
+        "amount": 50000,
+        "method": "bank-transfer",
+        "referenceNumber": "TXN123456"
+      }
+    }
+  },
+  "hr": {
+    "processPayroll": {
+      "method": "POST",
+      "endpoint": "/api/hr/payroll",
+      "body": {
+        "employeeId": "employee-uuid",
+        "month": "2024-01",
+        "baseSalary": 100000,
+        "bonus": 10000,
+        "allowances": 20000,
+        "deductions": 5000
+      }
+    },
+    "syncPayrollToFinance": {
+      "method": "POST",
+      "endpoint": "/api/finance/sync/payroll/:payrollId"
+    }
+  }
+}
+

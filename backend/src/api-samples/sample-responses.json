@@ -1,0 +1,184 @@
+{
+  "property": {
+    "id": "property-uuid",
+    "name": "Sunset Apartments",
+    "title": "Luxury Residential Complex",
+    "type": "Residential",
+    "address": "123 Main Street",
+    "city": "Karachi",
+    "propertyCode": "PROP-1704067200000-ABC123",
+    "status": "Occupied",
+    "size": 50000,
+    "totalUnits": 50,
+    "ownerName": "ABC Real Estate",
+    "ownerPhone": "+92-300-1234567",
+    "rentAmount": 50000,
+    "securityDeposit": 100000,
+    "rentEscalationPercentage": 5,
+    "createdAt": "2024-01-01T00:00:00Z",
+    "updatedAt": "2024-01-15T00:00:00Z",
+    "tenancies": [
+      {
+        "id": "tenancy-uuid",
+        "propertyId": "property-uuid",
+        "tenantId": "tenant-uuid",
+        "leaseStart": "2024-01-01T00:00:00Z",
+        "leaseEnd": "2024-12-31T23:59:59Z",
+        "monthlyRent": 50000,
+        "nextInvoiceDate": "2024-02-01T00:00:00Z",
+        "status": "active",
+        "tenant": {
+          "id": "tenant-uuid",
+          "name": "John Doe",
+          "email": "john@example.com",
+          "phone": "+92-300-1234567"
+        }
+      }
+    ],
+    "propertyExpenses": [
+      {
+        "id": "expense-uuid",
+        "category": "maintenance",
+        "amount": 15000,
+        "date": "2024-01-15T00:00:00Z",
+        "description": "AC repair and servicing",
+        "financeLedgerId": "ledger-uuid"
+      }
+    ]
+  },
+  "financeLedger": {
+    "id": "ledger-uuid",
+    "referenceType": "invoice",
+    "referenceId": "invoice-uuid",
+    "category": "income",
+    "amount": 50000,
+    "date": "2024-01-01T00:00:00Z",
+    "description": "Rent invoice INV-202401-123456",
+    "notes": "Auto-generated from invoice INV-202401-123456",
+    "propertyId": "property-uuid",
+    "tenantId": "tenant-uuid",
+    "invoiceId": "invoice-uuid",
+    "createdAt": "2024-01-01T00:00:00Z",
+    "property": {
+      "id": "property-uuid",
+      "name": "Sunset Apartments",
+      "propertyCode": "PROP-1704067200000-ABC123"
+    },
+    "tenant": {
+      "id": "tenant-uuid",
+      "name": "John Doe",
+      "tenantCode": "TEN-123456"
+    }
+  },
+  "financeSummary": {
+    "income": {
+      "total": 500000,
+      "count": 10
+    },
+    "expenses": {
+      "total": 150000,
+      "count": 5
+    },
+    "netProfit": 350000
+  },
+  "propertyDashboard": {
+    "property": {
+      "id": "property-uuid",
+      "name": "Sunset Apartments",
+      "code": "PROP-1704067200000-ABC123",
+      "status": "Occupied",
+      "type": "Residential"
+    },
+    "financials": {
+      "income": 500000,
+      "expenses": 150000,
+      "netProfit": 350000,
+      "occupancyRate": 80.5
+    },
+    "occupancy": {
+      "totalUnits": 50,
+      "occupiedUnits": 40,
+      "vacantUnits": 10
+    },
+    "maintenance": {
+      "openRequests": 3,
+      "totalRequests": 15
+    },
+    "recentExpenses": [
+      {
+        "id": "expense-uuid",
+        "category": "maintenance",
+        "amount": 15000,
+        "date": "2024-01-15T00:00:00Z",
+        "description": "AC repair"
+      }
+    ],
+    "recentMaintenance": [
+      {
+        "id": "maintenance-uuid",
+        "issueTitle": "AC Not Working",
+        "status": "in-progress",
+        "priority": "high",
+        "createdAt": "2024-01-14T00:00:00Z"
+      }
+    ]
+  },
+  "tenantLedger": {
+    "entries": [
+      {
+        "id": "ledger-entry-uuid",
+        "ledgerNumber": "TL-1704067200000-abc123",
+        "entryDate": "2024-01-01T00:00:00Z",
+        "entryType": "debit",
+        "description": "Monthly rent invoice INV-202401-123456",
+        "amount": 50000,
+        "balance": 50000,
+        "referenceId": "invoice-uuid",
+        "referenceType": "invoice"
+      },
+      {
+        "id": "ledger-entry-uuid-2",
+        "ledgerNumber": "TL-1704153600000-def456",
+        "entryDate": "2024-01-10T00:00:00Z",
+        "entryType": "credit",
+        "description": "Payment received PAY-202401-789012",
+        "amount": 50000,
+        "balance": 0,
+        "referenceId": "payment-uuid",
+        "referenceType": "payment"
+      }
+    ]
+  },
+  "auditLog": {
+    "id": "audit-uuid",
+    "entityType": "property",
+    "entityId": "property-uuid",
+    "action": "update",
+    "userId": "user-uuid",
+    "userName": "admin",
+    "userRole": "Admin",
+    "oldValues": {
+      "status": "Vacant",
+      "rentAmount": 50000
+    },
+    "newValues": {
+      "status": "Occupied",
+      "rentAmount": 55000
+    },
+    "changes": {
+      "status": {
+        "old": "Vacant",
+        "new": "Occupied"
+      },
+      "rentAmount": {
+        "old": 50000,
+        "new": 55000
+      }
+    },
+    "description": "Property updated: Sunset Apartments",
+    "ipAddress": "192.168.1.1",
+    "userAgent": "Mozilla/5.0...",
+    "createdAt": "2024-01-15T10:30:00Z"
+  }
+}
+

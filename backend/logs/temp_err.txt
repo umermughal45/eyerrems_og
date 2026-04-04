@@ -1,0 +1,309 @@
+[31mError fetching application settings: [39m
+[31mInvalid `prisma.appSettings.findFirst()` invocation in[39m
+[31mD:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47[39m
+
+[31m  18 }[39m
+[31m  19 [39m
+[31m  20 try {[39m
+[31m→ 21   let settings = await prisma.appSettings.findFirst([39m
+[31mThe column `AppSettings.companyLogo` does not exist in the current database.[39m
+PrismaClientKnownRequestError: 
+Invalid `prisma.appSettings.findFirst()` invocation in
+D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47
+
+  18 }
+  19 
+  20 try {
+→ 21   let settings = await prisma.appSettings.findFirst(
+The column `AppSettings.companyLogo` does not exist in the current database.
+    at $n.handleRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async SettingsService.getSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:22)
+    at async SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:53:23)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:56:21)
+
+[31mError updating application settings: Cannot read properties of null (reading 'id')[39m
+TypeError: Cannot read properties of null (reading 'id')
+    at SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:56:30)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:56:21)
+
+[31mError fetching application settings: [39m
+[31mInvalid `prisma.appSettings.findFirst()` invocation in[39m
+[31mD:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47[39m
+
+[31m  18 }[39m
+[31m  19 [39m
+[31m  20 try {[39m
+[31m→ 21   let settings = await prisma.appSettings.findFirst([39m
+[31mThe column `AppSettings.companyLogo` does not exist in the current database.[39m
+PrismaClientKnownRequestError: 
+Invalid `prisma.appSettings.findFirst()` invocation in
+D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47
+
+  18 }
+  19 
+  20 try {
+→ 21   let settings = await prisma.appSettings.findFirst(
+The column `AppSettings.companyLogo` does not exist in the current database.
+    at $n.handleRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async SettingsService.getSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:22)
+    at async SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:53:23)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError updating application settings: Cannot read properties of null (reading 'id')[39m
+TypeError: Cannot read properties of null (reading 'id')
+    at SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:56:30)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError fetching application settings: [39m
+[31mInvalid `prisma.appSettings.findFirst()` invocation in[39m
+[31mD:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47[39m
+
+[31m  18 }[39m
+[31m  19 [39m
+[31m  20 try {[39m
+[31m→ 21   let settings = await prisma.appSettings.findFirst([39m
+[31mThe column `AppSettings.companyLogo` does not exist in the current database.[39m
+PrismaClientKnownRequestError: 
+Invalid `prisma.appSettings.findFirst()` invocation in
+D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47
+
+  18 }
+  19 
+  20 try {
+→ 21   let settings = await prisma.appSettings.findFirst(
+The column `AppSettings.companyLogo` does not exist in the current database.
+    at $n.handleRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async SettingsService.getSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:22)
+    at async SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:53:23)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError updating application settings: Cannot read properties of null (reading 'id')[39m
+TypeError: Cannot read properties of null (reading 'id')
+    at SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:56:30)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError fetching application settings: [39m
+[31mInvalid `prisma.appSettings.findFirst()` invocation in[39m
+[31mD:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47[39m
+
+[31m  18 }[39m
+[31m  19 [39m
+[31m  20 try {[39m
+[31m→ 21   let settings = await prisma.appSettings.findFirst([39m
+[31mThe column `AppSettings.companyLogo` does not exist in the current database.[39m
+PrismaClientKnownRequestError: 
+Invalid `prisma.appSettings.findFirst()` invocation in
+D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47
+
+  18 }
+  19 
+  20 try {
+→ 21   let settings = await prisma.appSettings.findFirst(
+The column `AppSettings.companyLogo` does not exist in the current database.
+    at $n.handleRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async SettingsService.getSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:22)
+    at async SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:53:23)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError updating application settings: Cannot read properties of null (reading 'id')[39m
+TypeError: Cannot read properties of null (reading 'id')
+    at SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:56:30)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError fetching application settings: [39m
+[31mInvalid `prisma.appSettings.findFirst()` invocation in[39m
+[31mD:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47[39m
+
+[31m  18 }[39m
+[31m  19 [39m
+[31m  20 try {[39m
+[31m→ 21   let settings = await prisma.appSettings.findFirst([39m
+[31mThe column `AppSettings.companyLogo` does not exist in the current database.[39m
+PrismaClientKnownRequestError: 
+Invalid `prisma.appSettings.findFirst()` invocation in
+D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47
+
+  18 }
+  19 
+  20 try {
+→ 21   let settings = await prisma.appSettings.findFirst(
+The column `AppSettings.companyLogo` does not exist in the current database.
+    at $n.handleRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async SettingsService.getSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:22)
+    at async SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:53:23)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError updating application settings: Cannot read properties of null (reading 'id')[39m
+TypeError: Cannot read properties of null (reading 'id')
+    at SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:56:30)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError fetching application settings: [39m
+[31mInvalid `prisma.appSettings.findFirst()` invocation in[39m
+[31mD:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47[39m
+
+[31m  18 }[39m
+[31m  19 [39m
+[31m  20 try {[39m
+[31m→ 21   let settings = await prisma.appSettings.findFirst([39m
+[31mThe column `AppSettings.companyLogo` does not exist in the current database.[39m
+PrismaClientKnownRequestError: 
+Invalid `prisma.appSettings.findFirst()` invocation in
+D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47
+
+  18 }
+  19 
+  20 try {
+→ 21   let settings = await prisma.appSettings.findFirst(
+The column `AppSettings.companyLogo` does not exist in the current database.
+    at $n.handleRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async SettingsService.getSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:22)
+    at async SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:53:23)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError updating application settings: Cannot read properties of null (reading 'id')[39m
+TypeError: Cannot read properties of null (reading 'id')
+    at SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:56:30)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError fetching application settings: [39m
+[31mInvalid `prisma.appSettings.findFirst()` invocation in[39m
+[31mD:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47[39m
+
+[31m  18 }[39m
+[31m  19 [39m
+[31m  20 try {[39m
+[31m→ 21   let settings = await prisma.appSettings.findFirst([39m
+[31mThe column `AppSettings.companyLogo` does not exist in the current database.[39m
+PrismaClientKnownRequestError: 
+Invalid `prisma.appSettings.findFirst()` invocation in
+D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47
+
+  18 }
+  19 
+  20 try {
+→ 21   let settings = await prisma.appSettings.findFirst(
+The column `AppSettings.companyLogo` does not exist in the current database.
+    at $n.handleRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async SettingsService.getSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:22)
+    at async SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:53:23)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError updating application settings: Cannot read properties of null (reading 'id')[39m
+TypeError: Cannot read properties of null (reading 'id')
+    at SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:56:30)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError fetching application settings: [39m
+[31mInvalid `prisma.appSettings.findFirst()` invocation in[39m
+[31mD:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47[39m
+
+[31m  18 }[39m
+[31m  19 [39m
+[31m  20 try {[39m
+[31m→ 21   let settings = await prisma.appSettings.findFirst([39m
+[31mThe column `AppSettings.companyLogo` does not exist in the current database.[39m
+PrismaClientKnownRequestError: 
+Invalid `prisma.appSettings.findFirst()` invocation in
+D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47
+
+  18 }
+  19 
+  20 try {
+→ 21   let settings = await prisma.appSettings.findFirst(
+The column `AppSettings.companyLogo` does not exist in the current database.
+    at $n.handleRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async SettingsService.getSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:22)
+    at async SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:53:23)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError updating application settings: Cannot read properties of null (reading 'id')[39m
+TypeError: Cannot read properties of null (reading 'id')
+    at SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:56:30)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError fetching application settings: [39m
+[31mInvalid `prisma.appSettings.findFirst()` invocation in[39m
+[31mD:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47[39m
+
+[31m  18 }[39m
+[31m  19 [39m
+[31m  20 try {[39m
+[31m→ 21   let settings = await prisma.appSettings.findFirst([39m
+[31mThe column `AppSettings.companyLogo` does not exist in the current database.[39m
+PrismaClientKnownRequestError: 
+Invalid `prisma.appSettings.findFirst()` invocation in
+D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47
+
+  18 }
+  19 
+  20 try {
+→ 21   let settings = await prisma.appSettings.findFirst(
+The column `AppSettings.companyLogo` does not exist in the current database.
+    at $n.handleRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async SettingsService.getSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:22)
+    at async SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:53:23)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError updating application settings: Cannot read properties of null (reading 'id')[39m
+TypeError: Cannot read properties of null (reading 'id')
+    at SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:56:30)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError fetching application settings: [39m
+[31mInvalid `prisma.appSettings.findFirst()` invocation in[39m
+[31mD:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47[39m
+
+[31m  18 }[39m
+[31m  19 [39m
+[31m  20 try {[39m
+[31m→ 21   let settings = await prisma.appSettings.findFirst([39m
+[31mThe column `AppSettings.companyLogo` does not exist in the current database.[39m
+PrismaClientKnownRequestError: 
+Invalid `prisma.appSettings.findFirst()` invocation in
+D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:47
+
+  18 }
+  19 
+  20 try {
+→ 21   let settings = await prisma.appSettings.findFirst(
+The column `AppSettings.companyLogo` does not exist in the current database.
+    at $n.handleRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (D:\eyercall_eyerrems_og\server\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async SettingsService.getSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:21:22)
+    at async SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:53:23)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)
+
+[31mError updating application settings: Cannot read properties of null (reading 'id')[39m
+TypeError: Cannot read properties of null (reading 'id')
+    at SettingsService.updateSettings (D:\eyercall_eyerrems_og\server\src\services\settings.service.ts:56:30)
+    at async <anonymous> (D:\eyercall_eyerrems_og\server\src\routes\settings.ts:58:21)

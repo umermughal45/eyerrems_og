@@ -1,0 +1,179 @@
+erDiagram
+    Property ||--o{ Tenancy : "has"
+    Property ||--o{ PropertyExpense : "has"
+    Property ||--o{ MaintenanceRequest : "has"
+    Property ||--o{ FinanceLedger : "linked"
+    Property ||--o{ Attachment : "has"
+    
+    Tenant ||--o{ Tenancy : "has"
+    Tenant ||--o{ Lease : "has"
+    Tenant ||--o{ Invoice : "receives"
+    Tenant ||--o{ Payment : "makes"
+    Tenant ||--o{ MaintenanceRequest : "creates"
+    Tenant ||--o{ TenantLedger : "has"
+    Tenant ||--o{ FinanceLedger : "linked"
+    Tenant ||--o{ Attachment : "has"
+    
+    Lease ||--o{ Tenancy : "creates"
+    Lease ||--|| Invoice : "generates"
+    
+    Tenancy ||--|| Invoice : "generates"
+    Invoice ||--o{ Payment : "receives"
+    Invoice ||--|| FinanceLedger : "syncs"
+    
+    Payment ||--|| FinanceLedger : "syncs"
+    Payment ||--|| TenantLedger : "updates"
+    
+    PropertyExpense ||--|| FinanceLedger : "syncs"
+    MaintenanceRequest ||--o| FinanceLedger : "syncs"
+    
+    Deal ||--o| FinanceLedger : "syncs"
+    Deal ||--|| Client : "belongs"
+    Deal ||--|| Property : "references"
+    
+    Lead ||--o| Client : "converts"
+    Client ||--o{ Deal : "has"
+    
+    Payroll ||--o| FinanceLedger : "syncs"
+    Payroll ||--|| Employee : "for"
+    
+    User ||--o{ AuditLog : "creates"
+    Property ||--o{ AuditLog : "tracked"
+    Tenant ||--o{ AuditLog : "tracked"
+    Deal ||--o{ AuditLog : "tracked"
+    
+    Property {
+        string id PK
+        string propertyCode UK
+        string name
+        string status
+        float rentAmount
+        string ownerName
+        string ownerPhone
+    }
+    
+    Tenant {
+        string id PK
+        string tenantCode UK
+        string name
+        float outstandingBalance
+        string unitId FK
+    }
+    
+    Tenancy {
+        string id PK
+        string propertyId FK
+        string tenantId FK
+        string leaseId FK
+        datetime leaseStart
+        datetime leaseEnd
+        float monthlyRent
+        datetime nextInvoiceDate
+        string status
+    }
+    
+    Invoice {
+        string id PK
+        string invoiceNumber UK
+        string tenantId FK
+        string propertyId FK
+        float totalAmount
+        float remainingAmount
+        string status
+    }
+    
+    Payment {
+        string id PK
+        string paymentId UK
+        string tenantId FK
+        string invoiceId FK
+        float amount
+        string method
+        string status
+    }
+    
+    FinanceLedger {
+        string id PK
+        string referenceType
+        string referenceId
+        string category
+        float amount
+        datetime date
+        string propertyId FK
+        string tenantId FK
+        string dealId FK
+        string payrollId
+        string invoiceId
+        string paymentId
+    }
+    
+    PropertyExpense {
+        string id PK
+        string propertyId FK
+        string category
+        float amount
+        datetime date
+        string financeLedgerId FK
+    }
+    
+    MaintenanceRequest {
+        string id PK
+        string propertyId FK
+        string tenantId FK
+        string issueTitle
+        string priority
+        string status
+        float actualCost
+        string financeLedgerId FK
+    }
+    
+    Deal {
+        string id PK
+        string dealCode UK
+        string clientId FK
+        string propertyId FK
+        float value
+        string stage
+        float commissionAmount
+    }
+    
+    Payroll {
+        string id PK
+        string employeeId FK
+        string month
+        float netPay
+        string paymentStatus
+        string financeLedgerId
+    }
+    
+    TenantLedger {
+        string id PK
+        string tenantId FK
+        string entryType
+        float amount
+        float balance
+        string referenceId
+        string referenceType
+    }
+    
+    AuditLog {
+        string id PK
+        string entityType
+        string entityId
+        string action
+        string userId FK
+        json oldValues
+        json newValues
+        json changes
+    }
+    
+    Attachment {
+        string id PK
+        string entityType
+        string entityId
+        string fileName
+        string fileUrl
+        string propertyId FK
+        string tenantId FK
+    }
+
