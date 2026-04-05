@@ -153,7 +153,7 @@ router.post('/login', async (req, res) => {
         });
         if (companyUser) {
             // Verify password
-            const isValid = await (0, password_1.comparePassword)(password, companyUser.passwordHash);
+            const isValid = await (0, password_1.comparePassword)(password, companyUser.passwordHash ?? '');
             if (!isValid) {
                 return res.status(401).json({ error: 'Invalid credentials' });
             }

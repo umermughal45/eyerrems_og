@@ -8,28 +8,28 @@ function getTimeAgo(date: Date): string {
   if (diffInSeconds < 60) return 'Just now'
 
   const diffInMinutes = Math.floor(diffInSeconds / 60)
-  if (diffInMinutes < 60) return ${diffInMinutes} minute ago
+  if (diffInMinutes < 60) return `${diffInMinutes} minute ago`
 
   const diffInHours = Math.floor(diffInMinutes / 60)
-  if (diffInHours < 24) return ${diffInHours} hour ago
+  if (diffInHours < 24) return `${diffInHours} hour ago`
 
   const diffInDays = Math.floor(diffInHours / 24)
-  if (diffInDays < 7) return ${diffInDays} day ago
+  if (diffInDays < 7) return `${diffInDays} day ago`
 
   const diffInWeeks = Math.floor(diffInDays / 7)
-  if (diffInWeeks < 4) return ${diffInWeeks} week ago
+  if (diffInWeeks < 4) return `${diffInWeeks} week ago`
 
   const diffInMonths = Math.floor(diffInDays / 30)
-  return ${diffInMonths} month ago
+  return `${diffInMonths} month ago`
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 async function apiCall(endpoint: string) {
   const token = localStorage.getItem('token');
-  const response = await axios.get(${API_BASE_URL}, {
+  const response = await axios.get(`${API_BASE_URL}${endpoint}`, {
     headers: {
-      Authorization: Bearer ,
+      Authorization: `Bearer ${token}`,
     },
   });
   return response.data.data;
@@ -52,11 +52,15 @@ export async function getFinanceStatsServer() {
 }
 
 export async function getRevenueVsExpenseServer(monthsCount = 12) {
-  return await apiCall(/stats/finance/revenue-vs-expense?months=);
+  return await apiCall(`/stats/finance/revenue-vs-expense?months=${monthsCount}`);
 }
 
 export async function getDashboardDataServer() {
   return await apiCall('/stats/dashboard');
+}
+
+export async function getCRMPageStatsServer() {
+  return await apiCall('/stats/crm');
 }
 
 export async function getFinancePageStatsServer() {
@@ -72,39 +76,43 @@ export async function getFinancePageStatsServer() {
 }
 
 export async function getPropertiesDetailsServer(searchTerm?: string) {
+  const token = localStorage.getItem('token');
   const endpoint = searchTerm
-    ? /properties?search=
+    ? `/properties?search=${searchTerm}`
     : '/properties';
-  const response = await axios.get(${API_BASE_URL}, {
+  const response = await axios.get(`${API_BASE_URL}${endpoint}`, {
     headers: {
-      Authorization: Bearer ,
+      Authorization: `Bearer ${token}`,
     },
   });
   return response.data.data;
 }
 
 export async function getTenantsDetailsServer() {
-  const response = await axios.get(${API_BASE_URL}/tenants, {
+  const token = localStorage.getItem('token');
+  const response = await axios.get(`${API_BASE_URL}/tenants`, {
     headers: {
-      Authorization: Bearer ,
+      Authorization: `Bearer ${token}`,
     },
   });
   return response.data.data;
 }
 
 export async function getSalesDetailsServer() {
-  const response = await axios.get(${API_BASE_URL}/sales, {
+  const token = localStorage.getItem('token');
+  const response = await axios.get(`${API_BASE_URL}/sales`, {
     headers: {
-      Authorization: Bearer ,
+      Authorization: `Bearer ${token}`,
     },
   });
   return response.data.data;
 }
 
 export async function getEmployeesDetailsServer() {
-  const response = await axios.get(${API_BASE_URL}/employees, {
+  const token = localStorage.getItem('token');
+  const response = await axios.get(`${API_BASE_URL}/employees`, {
     headers: {
-      Authorization: Bearer ,
+      Authorization: `Bearer ${token}`,
     },
   });
   return response.data.data;

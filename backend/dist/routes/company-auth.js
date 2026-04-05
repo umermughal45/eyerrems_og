@@ -49,7 +49,7 @@ router.post('/login', async (req, res) => {
             });
         }
         // Verify password
-        const isValid = await bcryptjs_1.default.compare(password, companyUser.passwordHash);
+        const isValid = await bcryptjs_1.default.compare(password, companyUser.passwordHash ?? '');
         if (!isValid) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }

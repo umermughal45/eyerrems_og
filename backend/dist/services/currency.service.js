@@ -88,7 +88,7 @@ class CurrencyService {
             const result = await client_1.default.currency.upsert({
                 where: { code },
                 update: { ...rest, updatedAt: new Date() },
-                create: { code, ...rest },
+                create: { code, name: code, ...rest },
             });
             if (req) {
                 await (0, audit_log_1.createAuditLog)({

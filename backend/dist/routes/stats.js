@@ -1076,8 +1076,6 @@ router.get('/properties/occupancy-trend', auth_1.authenticate, async (req, res) 
         });
     }
 });
-exports.default = router;
-;
 // Get dashboard data
 router.get('/dashboard', auth_1.authenticate, async (req, res) => {
     try {
@@ -1091,12 +1089,12 @@ router.get('/dashboard', auth_1.authenticate, async (req, res) => {
                 const occupiedUnits = await client_2.default.unit.count({ where: { isDeleted: false, status: 'Occupied', property: { type: { not: 'house' }, isDeleted: false } } });
                 const totalHouses = await client_2.default.property.count({ where: { type: 'house', isDeleted: false } });
                 const rentedOrSoldHouses = await client_2.default.property.count({ where: { type: 'house', isDeleted: false, status: { in: ['For Rent', 'Sold'] } } });
-                const monthlyRevenueResult = await client_2.default.unit.aggregate({ where: { isDeleted: false, status: 'Occupied' }, _sum: { rentAmount: true } });
+                const monthlyRevenueResult = await client_2.default.unit.aggregate({ where: { isDeleted: false, status: 'Occupied' }, _sum: { monthlyRent: true } });
                 const totalTenants = await client_2.default.tenant.count({ where: { isDeleted: false } });
                 const propertiesThisMonth = await client_2.default.property.count({ where: { isDeleted: false, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } });
                 const tenantsThisMonth = await client_2.default.tenant.count({ where: { isDeleted: false, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } });
                 const propertyTypeData = await client_2.default.property.groupBy({ by: ['type'], where: { isDeleted: false }, _count: { id: true } });
-                const recentActivities = (await client_2.default.activity.findMany({ where: { isDeleted: false }, orderBy: { createdAt: 'desc' }, take: 10, include: { user: true } })).map(activity => ({
+                const recentActivities = (await client_2.default.activity.findMany({ orderBy: { createdAt: 'desc' }, take: 10 })).map(activity => ({
                     ...activity,
                     timeAgo: getTimeAgo(activity.createdAt)
                 }));
@@ -1108,7 +1106,7 @@ router.get('/dashboard', auth_1.authenticate, async (req, res) => {
                     occupiedUnits,
                     totalHouses,
                     rentedOrSoldHouses,
-                    monthlyRevenue: monthlyRevenueResult._sum.rentAmount || 0,
+                    monthlyRevenue: monthlyRevenueResult._sum?.monthlyRent || 0,
                     totalTenants,
                     propertiesThisMonth,
                     tenantsThisMonth,
@@ -1148,13 +1146,13 @@ router.get('/dashboard', auth_1.authenticate, async (req, res) => {
             })(),
             // Finance stats
             (async () => {
-                const totalRevenue = await client_2.default.transaction.aggregate({ where: { type: 'Income', isDeleted: false }, _sum: { amount: true } });
-                const totalExpenses = await client_2.default.transaction.aggregate({ where: { type: 'Expense', isDeleted: false }, _sum: { amount: true } });
-                const pendingInvoices = await client_2.default.invoice.count({ where: { status: 'Pending', isDeleted: false } });
-                const overdueInvoices = await client_2.default.invoice.count({ where: { status: 'Overdue', isDeleted: false } });
+                const totalRevenue = await client_2.default.transaction.aggregate({ where: { transactionType: 'Income' }, _sum: { amount: true } });
+                const totalExpenses = await client_2.default.transaction.aggregate({ where: { transactionType: 'Expense' }, _sum: { amount: true } });
+                const pendingInvoices = await client_2.default.invoice.count({ where: { status: 'Pending' } });
+                const overdueInvoices = await client_2.default.invoice.count({ where: { status: 'Overdue' } });
                 return {
-                    totalRevenue: totalRevenue._sum.amount || 0,
-                    totalExpenses: totalExpenses._sum.amount || 0,
+                    totalRevenue: totalRevenue._sum?.amount || 0,
+                    totalExpenses: totalExpenses._sum?.amount || 0,
                     pendingInvoices,
                     overdueInvoices
                 };
@@ -1174,24 +1172,22 @@ router.get('/dashboard', auth_1.authenticate, async (req, res) => {
                     const monthLabel = monthStart.toLocaleString('default', { month: 'short', year: 'numeric' });
                     const revenue = await client_2.default.transaction.aggregate({
                         where: {
-                            type: 'Income',
-                            isDeleted: false,
+                            transactionType: 'Income',
                             date: { gte: monthStart, lte: monthEnd }
                         },
                         _sum: { amount: true }
                     });
                     const expenses = await client_2.default.transaction.aggregate({
                         where: {
-                            type: 'Expense',
-                            isDeleted: false,
+                            transactionType: 'Expense',
                             date: { gte: monthStart, lte: monthEnd }
                         },
                         _sum: { amount: true }
                     });
                     data.push({
                         month: monthLabel,
-                        revenue: revenue._sum.amount || 0,
-                        expenses: expenses._sum.amount || 0
+                        revenue: revenue._sum?.amount || 0,
+                        expenses: expenses._sum?.amount || 0
                     });
                 }
                 return data;

@@ -116,7 +116,7 @@ class MailService {
                 subject: msg.subject,
                 from: [{ name: msg.senderName || msg.senderEmail, address: msg.senderEmail }],
                 to: [{ address: msg.to }],
-                date: msg.sentAt.toISOString(),
+                date: msg.sentAt?.toISOString() ?? new Date().toISOString(),
                 flags: msg.isRead ? ['\\Seen'] : [],
                 snippet: msg.body ? msg.body.replace(/<[^>]*>?/gm, '').substring(0, 100) : '',
             }));
@@ -142,7 +142,7 @@ class MailService {
                 subject: msg.subject,
                 from: [{ name: msg.senderName || 'System', address: msg.senderEmail }],
                 to: [{ address: msg.to }],
-                date: msg.sentAt.toISOString(),
+                date: msg.sentAt?.toISOString() ?? new Date().toISOString(),
                 flags: ['\\Seen'],
                 snippet: msg.body ? msg.body.replace(/<[^>]*>?/gm, '').substring(0, 100) : '',
             }));

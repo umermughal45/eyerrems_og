@@ -78,7 +78,7 @@ const authenticateCompanyUser = async (req, res, next) => {
             companyId: companyUser.companyId,
             role: companyUser.role,
             isSuperAdmin: companyUser.isSuperAdmin,
-            name: companyUser.name,
+            name: companyUser.name ?? '',
             email: companyUser.email,
         };
         next();

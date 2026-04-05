@@ -1220,16 +1220,14 @@ router.get('/properties/occupancy-trend', authenticate, async (req: AuthRequest,
       success: true,
       data,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get occupancy trend data error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch occupancy trend data',
       message: error instanceof Error ? error.message : 'Unknown error',
     });
-});
-
-export default router;
+  }
 });
 
 // Get dashboard data
@@ -1254,12 +1252,12 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response) =
         const occupiedUnits = await prisma.unit.count({ where: { isDeleted: false, status: 'Occupied', property: { type: { not: 'house' }, isDeleted: false } } });
         const totalHouses = await prisma.property.count({ where: { type: 'house', isDeleted: false } });
         const rentedOrSoldHouses = await prisma.property.count({ where: { type: 'house', isDeleted: false, status: { in: ['For Rent', 'Sold'] } } });
-        const monthlyRevenueResult = await prisma.unit.aggregate({ where: { isDeleted: false, status: 'Occupied' }, _sum: { rentAmount: true } });
+        const monthlyRevenueResult = await prisma.unit.aggregate({ where: { isDeleted: false, status: 'Occupied' }, _sum: { monthlyRent: true } });
         const totalTenants = await prisma.tenant.count({ where: { isDeleted: false } });
         const propertiesThisMonth = await prisma.property.count({ where: { isDeleted: false, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } });
         const tenantsThisMonth = await prisma.tenant.count({ where: { isDeleted: false, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } });
         const propertyTypeData = await prisma.property.groupBy({ by: ['type'], where: { isDeleted: false }, _count: { id: true } });
-        const recentActivities = (await prisma.activity.findMany({ where: { isDeleted: false }, orderBy: { createdAt: 'desc' }, take: 10, include: { user: true } })).map(activity => ({
+        const recentActivities = (await prisma.activity.findMany({ orderBy: { createdAt: 'desc' }, take: 10 })).map(activity => ({
           ...activity,
           timeAgo: getTimeAgo(activity.createdAt)
         }));
@@ -1272,7 +1270,7 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response) =
           occupiedUnits,
           totalHouses,
           rentedOrSoldHouses,
-          monthlyRevenue: monthlyRevenueResult._sum.rentAmount || 0,
+          monthlyRevenue: monthlyRevenueResult._sum?.monthlyRent || 0,
           totalTenants,
           propertiesThisMonth,
           tenantsThisMonth,
@@ -1317,14 +1315,14 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response) =
 
       // Finance stats
       (async () => {
-        const totalRevenue = await prisma.transaction.aggregate({ where: { type: 'Income', isDeleted: false }, _sum: { amount: true } });
-        const totalExpenses = await prisma.transaction.aggregate({ where: { type: 'Expense', isDeleted: false }, _sum: { amount: true } });
-        const pendingInvoices = await prisma.invoice.count({ where: { status: 'Pending', isDeleted: false } });
-        const overdueInvoices = await prisma.invoice.count({ where: { status: 'Overdue', isDeleted: false } });
+        const totalRevenue = await prisma.transaction.aggregate({ where: { transactionType: 'Income' }, _sum: { amount: true } });
+        const totalExpenses = await prisma.transaction.aggregate({ where: { transactionType: 'Expense' }, _sum: { amount: true } });
+        const pendingInvoices = await prisma.invoice.count({ where: { status: 'Pending' } });
+        const overdueInvoices = await prisma.invoice.count({ where: { status: 'Overdue' } });
 
         return {
-          totalRevenue: totalRevenue._sum.amount || 0,
-          totalExpenses: totalExpenses._sum.amount || 0,
+          totalRevenue: totalRevenue._sum?.amount || 0,
+          totalExpenses: totalExpenses._sum?.amount || 0,
           pendingInvoices,
           overdueInvoices
         };
@@ -1349,8 +1347,7 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response) =
 
           const revenue = await prisma.transaction.aggregate({
             where: {
-              type: 'Income',
-              isDeleted: false,
+              transactionType: 'Income',
               date: { gte: monthStart, lte: monthEnd }
             },
             _sum: { amount: true }
@@ -1358,8 +1355,7 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response) =
 
           const expenses = await prisma.transaction.aggregate({
             where: {
-              type: 'Expense',
-              isDeleted: false,
+              transactionType: 'Expense',
               date: { gte: monthStart, lte: monthEnd }
             },
             _sum: { amount: true }
@@ -1367,8 +1363,8 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response) =
 
           data.push({
             month: monthLabel,
-            revenue: revenue._sum.amount || 0,
-            expenses: expenses._sum.amount || 0
+            revenue: revenue._sum?.amount || 0,
+            expenses: expenses._sum?.amount || 0
           });
         }
 

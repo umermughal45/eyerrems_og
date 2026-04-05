@@ -1460,6 +1460,7 @@ model Transaction {
 model Invoice {
   id                 String          @id @default(uuid())
   invoiceNumber      String          @unique
+  tid                String?         @unique
   amount             Float
   dueDate            DateTime
   status             String          @default("unpaid")
@@ -1496,6 +1497,7 @@ model Invoice {
 model Payment {
   id                String              @id @default(uuid())
   paymentId         String              @unique
+  tid               String?             @unique
   dealId            String
   amount            Float
   paymentType       String
@@ -3038,4 +3040,126 @@ enum FinancialOperationStatus {
   APPROVED
   POSTED
   REJECTED
+}
+
+model Company {
+  id             String           @id @default(uuid())
+  name           String?
+  companyName    String
+  companyCode    String           @unique
+  companyEmail   String?
+  companyPhone   String?
+  companyAddress String?
+  status         String           @default("active")
+  isActive       Boolean          @default(true)
+  createdBy      String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  settings       CompanySettings?
+  users          CompanyUser[]
+
+  @@index([companyCode])
+  @@index([status])
+}
+
+model CompanySettings {
+  id             String   @id @default(uuid())
+  companyId      String   @unique
+  currencyCode   String   @default("PKR")
+  currencySymbol String   @default("Rs")
+  timezone       String   @default("Asia/Karachi")
+  invoicePrefix  String   @default("INV")
+  logo           String?
+  settings       Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model CompanyUser {
+  id           String    @id @default(uuid())
+  companyId    String
+  email        String    @unique
+  password     String?
+  passwordHash String?
+  name         String?
+  role         String    @default("admin")
+  isSuperAdmin Boolean   @default(false)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([email])
+}
+
+model Currency {
+  id           String   @id @default(uuid())
+  code         String   @unique
+  name         String
+  symbol       String
+  exchangeRate Float?
+  isBase       Boolean  @default(false)
+  isDefault    Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([code])
+  @@index([isDefault])
+  @@index([isBase])
+}
+
+model EmailMessage {
+  id          String    @id @default(uuid())
+  subject     String
+  body        String
+  from        String?
+  to          String
+  senderEmail String?
+  senderName  String?
+  direction   String    @default("sent")
+  isRead      Boolean   @default(false)
+  status      String    @default("pending")
+  sentAt      DateTime?
+  error       String?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([direction])
+  @@index([createdAt])
+}
+
+model AppSettings {
+  id                  String   @id @default(uuid())
+  companyName         String?
+  companyEmail        String?
+  companyAddress      String?
+  companyLogo         String?
+  supportPhone        String?
+  selectedCurrency    String   @default("PKR")
+  notificationConfig  Json     @default("{}")
+  integrationConfig   Json     @default("{}")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model TransactionIdentityRegistry {
+  id          String   @id @default(uuid())
+  tid         String
+  entityType  String
+  entityId    String
+  moduleName  String?
+  prefix      String?
+  lastSequence Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tid])
+  @@index([entityType, entityId])
+  @@index([prefix])
 }

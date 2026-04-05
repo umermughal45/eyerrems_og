@@ -90,7 +90,7 @@ class CurrencyService {
       const result = await prisma.currency.upsert({
         where: { code },
         update: { ...rest, updatedAt: new Date() },
-        create: { code, ...rest },
+        create: { code, name: code, ...rest },
       });
 
       if (req) {
