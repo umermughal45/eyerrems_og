@@ -16,7 +16,7 @@ export function TenantsDetailsView({ initialData }: { initialData?: any }) {
   const [searchQuery, setSearchQuery] = useState("")
   const [tenants, setTenants] = useState<any[]>(() => {
     if (!initialData) return []
-    return initialData.tenants || []
+    return Array.isArray(initialData) ? initialData : (initialData.tenants || [])
   })
   const [loading, setLoading] = useState(!initialData)
   const [stats, setStats] = useState(() => {
@@ -26,7 +26,7 @@ export function TenantsDetailsView({ initialData }: { initialData?: any }) {
       newTenants: 0,
       expiringLeases: 0,
     }
-    const tenantsData = initialData.tenants || []
+    const tenantsData = Array.isArray(initialData) ? initialData : (initialData.tenants || [])
     const total = tenantsData.length || 0
     const active = tenantsData.filter((t: any) => t.status === "active").length || 0
     
@@ -122,7 +122,7 @@ export function TenantsDetailsView({ initialData }: { initialData?: any }) {
       fetchTenants()
     } else if (!tenantGrowthData.length) {
        // Calculate charts from initial data
-       const tenantsData = initialData.tenants || []
+       const tenantsData = Array.isArray(initialData) ? initialData : (initialData.tenants || [])
        const now = new Date()
        const last6Months = Array.from({ length: 6 }).map((_, i) => {
          const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1)

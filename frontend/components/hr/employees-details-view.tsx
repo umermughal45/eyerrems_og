@@ -21,7 +21,7 @@ export function EmployeesDetailsView({ initialData }: { initialData?: any }) {
   const router = useRouter()
   const [employees, setEmployees] = useState<any[]>(() => {
     if (!initialData) return []
-    return initialData.employees || []
+    return Array.isArray(initialData) ? initialData : (initialData.employees || [])
   })
   const [loading, setLoading] = useState(!initialData)
   const [searchQuery, setSearchQuery] = useState("")
@@ -32,7 +32,7 @@ export function EmployeesDetailsView({ initialData }: { initialData?: any }) {
       onLeave: 0,
       avgWorkHours: 0,
     }
-    const { statsData } = initialData
+    const statsData = initialData.statsData || {}
     return {
       totalEmployees: statsData.totalEmployees || 0,
       activeToday: statsData.activeToday || 0,

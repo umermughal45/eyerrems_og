@@ -34,7 +34,8 @@ export function PropertiesDetailsView({ initialData }: { initialData?: any }) {
       propertiesChange: "+0 this month",
       occupancyChange: "+0% from last month",
     }
-    const { statsData, properties } = initialData
+    const properties = Array.isArray(initialData) ? initialData : (initialData.properties || [])
+    const statsData = initialData.statsData || {}
     const uniqueLocations = new Set(
       properties
         .map((p: any) => p.locationNode?.name || p.location)
@@ -50,18 +51,18 @@ export function PropertiesDetailsView({ initialData }: { initialData?: any }) {
     }
   })
   const [propertyTypeData, setPropertyTypeData] = useState<any[]>(() => {
-    if (!initialData) return []
-    return initialData.statsData.propertyTypeData || []
+    if (!initialData || Array.isArray(initialData)) return []
+    return initialData.statsData?.propertyTypeData || []
   })
   const [propertyStatusData, setPropertyStatusData] = useState<any[]>(() => {
-    if (!initialData) return []
-    return initialData.statsData.propertyStatusData || []
+    if (!initialData || Array.isArray(initialData)) return []
+    return initialData.statsData?.propertyStatusData || []
   })
   const [occupancyTrend, setOccupancyTrend] = useState<any[]>([])
   const [revenueTrend, setRevenueTrend] = useState<any[]>([])
   const [propertiesList, setPropertiesList] = useState<any[]>(() => {
     if (!initialData) return []
-    return initialData.properties || []
+    return Array.isArray(initialData) ? initialData : (initialData.properties || [])
   })
   const [loading, setLoading] = useState(!initialData)
   const [searchTerm, setSearchTerm] = useState("")
@@ -133,7 +134,7 @@ export function PropertiesDetailsView({ initialData }: { initialData?: any }) {
       fetchData()
     } else if (initialData && !occupancyTrend.length) {
       // Calculate trends from initial data
-      const properties = initialData.properties || []
+      const properties = Array.isArray(initialData) ? initialData : (initialData.properties || [])
       const now = new Date();
       const last6Months = Array.from({ length: 6 }).map((_, i) => {
         const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);

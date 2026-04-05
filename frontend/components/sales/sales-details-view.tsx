@@ -16,7 +16,7 @@ export function SalesDetailsView({ initialData }: { initialData?: any }) {
   const [searchQuery, setSearchQuery] = useState("")
   const [sales, setSales] = useState<any[]>(() => {
     if (!initialData) return []
-    return initialData.sales || []
+    return Array.isArray(initialData) ? initialData : (initialData.sales || [])
   })
   const [loading, setLoading] = useState(!initialData)
   const [stats, setStats] = useState(() => {
@@ -26,7 +26,7 @@ export function SalesDetailsView({ initialData }: { initialData?: any }) {
       pendingSales: 0,
       totalRevenue: 0,
     }
-    const salesData = initialData.sales || []
+    const salesData = Array.isArray(initialData) ? initialData : (initialData.sales || [])
     const total = salesData.length || 0
     const completed = salesData.filter((s: any) => s.status === "Completed" || s.status === "completed").length || 0
     const pending = salesData.filter((s: any) => s.status === "Pending" || s.status === "pending").length || 0
@@ -100,7 +100,7 @@ export function SalesDetailsView({ initialData }: { initialData?: any }) {
       fetchSales()
     } else if (!salesTrendData.length) {
       // Calculate trends from initial data
-      const salesData = initialData.sales || []
+      const salesData = Array.isArray(initialData) ? initialData : (initialData.sales || [])
       const now = new Date()
       const last6Months = Array.from({ length: 6 }).map((_, i) => {
         const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1)
