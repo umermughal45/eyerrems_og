@@ -10,39 +10,11 @@ declare class MailService {
     /**
      * Fetch Inbox messages
      */
-    fetchInbox(limit?: number): Promise<{
-        uid: string;
-        seq: number;
-        subject: string;
-        from: {
-            name: string;
-            address: string;
-        }[];
-        to: {
-            address: string;
-        }[];
-        date: string;
-        flags: string[];
-        snippet: string;
-    }[]>;
+    fetchInbox(limit?: number): Promise<any>;
     /**
      * Fetch Sent messages directly from database
      */
-    fetchSent(limit?: number): Promise<{
-        uid: string;
-        seq: number;
-        subject: string;
-        from: {
-            name: string;
-            address: string;
-        }[];
-        to: {
-            address: string;
-        }[];
-        date: string;
-        flags: string[];
-        snippet: string;
-    }[]>;
+    fetchSent(limit?: number): Promise<any>;
     /**
      * Handle Webhook from Resend
      */
@@ -52,13 +24,13 @@ declare class MailService {
     /**
      * Get Unread Inbox messages count
      */
-    getUnreadCount(): Promise<number>;
+    getUnreadCount(): Promise<any>;
     /**
      * Get Message Body from database
      */
     getMessage(uid: string): Promise<{
-        uid: string;
-        source: string;
+        uid: any;
+        source: any;
     }>;
     /**
      * Sync Inbox using IMAP configuration

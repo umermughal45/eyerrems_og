@@ -27,7 +27,6 @@ export declare function getOverdueRentAlerts(tenantId?: string): Promise<{
         createdAt: Date;
         updatedAt: Date;
         attachments: import("@prisma/client/runtime/library").JsonValue | null;
-        tid: string | null;
         amount: number;
         journalEntryId: string | null;
         invoiceNumber: string;
@@ -254,7 +253,6 @@ export declare function getAllTenantAlerts(tenantId?: string): Promise<{
             createdAt: Date;
             updatedAt: Date;
             attachments: import("@prisma/client/runtime/library").JsonValue | null;
-            tid: string | null;
             amount: number;
             journalEntryId: string | null;
             invoiceNumber: string;

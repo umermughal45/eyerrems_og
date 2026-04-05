@@ -3,42 +3,15 @@ declare class CurrencyService {
     /**
      * Get all active currencies
      */
-    getAllActive(): Promise<{
-        symbol: string;
-        code: string;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        isActive: boolean;
-        exchangeRate: number;
-        isBase: boolean;
-    }[]>;
+    getAllActive(): Promise<any>;
     /**
      * Get all currencies (including inactive)
      */
-    getAll(): Promise<{
-        symbol: string;
-        code: string;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        isActive: boolean;
-        exchangeRate: number;
-        isBase: boolean;
-    }[]>;
+    getAll(): Promise<any>;
     /**
      * Update exchange rate for a currency
      */
-    updateRate(code: string, exchangeRate: number, req?: Request): Promise<{
-        symbol: string;
-        code: string;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        isActive: boolean;
-        exchangeRate: number;
-        isBase: boolean;
-    }>;
+    updateRate(code: string, exchangeRate: number, req?: Request): Promise<any>;
     /**
      * Create or update a currency
      */
@@ -48,29 +21,11 @@ declare class CurrencyService {
         exchangeRate?: number;
         isBase?: boolean;
         isActive?: boolean;
-    }, req?: Request): Promise<{
-        symbol: string;
-        code: string;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        isActive: boolean;
-        exchangeRate: number;
-        isBase: boolean;
-    }>;
+    }, req?: Request): Promise<any>;
     /**
      * Delete a currency (marks as inactive if it's the base or has history, but here we just deactivate)
      */
-    deactivateCurrency(code: string, req?: Request): Promise<{
-        symbol: string;
-        code: string;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        isActive: boolean;
-        exchangeRate: number;
-        isBase: boolean;
-    }>;
+    deactivateCurrency(code: string, req?: Request): Promise<any>;
 }
 export declare const currencyService: CurrencyService;
 export default currencyService;

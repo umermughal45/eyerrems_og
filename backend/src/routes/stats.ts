@@ -1227,6 +1227,185 @@ router.get('/properties/occupancy-trend', authenticate, async (req: AuthRequest,
       error: 'Failed to fetch occupancy trend data',
       message: error instanceof Error ? error.message : 'Unknown error',
     });
+});
+
+export default router;
+});
+
+// Get dashboard data
+router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const [
+      propsData,
+      hrData,
+      crmData,
+      financeData,
+      salesData,
+      leasesData,
+      revenueVsExpense,
+      allProperties
+    ] = await Promise.all([
+      // Properties stats
+      (async () => {
+        const totalProperties = await prisma.property.count({ where: { isDeleted: false } });
+        const totalMaintenanceRequests = await prisma.maintenanceRequest.count({ where: { isDeleted: false } });
+        const activeProperties = await prisma.property.count({ where: { isDeleted: false, status: 'Active' } });
+        const totalUnits = await prisma.unit.count({ where: { isDeleted: false, property: { type: { not: 'house' }, isDeleted: false } } });
+        const occupiedUnits = await prisma.unit.count({ where: { isDeleted: false, status: 'Occupied', property: { type: { not: 'house' }, isDeleted: false } } });
+        const totalHouses = await prisma.property.count({ where: { type: 'house', isDeleted: false } });
+        const rentedOrSoldHouses = await prisma.property.count({ where: { type: 'house', isDeleted: false, status: { in: ['For Rent', 'Sold'] } } });
+        const monthlyRevenueResult = await prisma.unit.aggregate({ where: { isDeleted: false, status: 'Occupied' }, _sum: { rentAmount: true } });
+        const totalTenants = await prisma.tenant.count({ where: { isDeleted: false } });
+        const propertiesThisMonth = await prisma.property.count({ where: { isDeleted: false, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } });
+        const tenantsThisMonth = await prisma.tenant.count({ where: { isDeleted: false, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } });
+        const propertyTypeData = await prisma.property.groupBy({ by: ['type'], where: { isDeleted: false }, _count: { id: true } });
+        const recentActivities = (await prisma.activity.findMany({ where: { isDeleted: false }, orderBy: { createdAt: 'desc' }, take: 10, include: { user: true } })).map(activity => ({
+          ...activity,
+          timeAgo: getTimeAgo(activity.createdAt)
+        }));
+
+        return {
+          totalProperties,
+          totalMaintenanceRequests,
+          activeProperties,
+          totalUnits,
+          occupiedUnits,
+          totalHouses,
+          rentedOrSoldHouses,
+          monthlyRevenue: monthlyRevenueResult._sum.rentAmount || 0,
+          totalTenants,
+          propertiesThisMonth,
+          tenantsThisMonth,
+          propertyTypeData,
+          recentActivities
+        };
+      })(),
+
+      // HR stats
+      (async () => {
+        const totalEmployees = await prisma.employee.count({ where: { isDeleted: false } });
+        const employeesThisMonth = await prisma.employee.count({ where: { isDeleted: false, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } });
+        const activeToday = await prisma.attendance.count({ where: { date: new Date().toISOString().split('T')[0], status: 'Present' } });
+        const pendingLeaves = await prisma.leaveRequest.count({ where: { status: 'Pending' } });
+
+        return {
+          totalEmployees,
+          employeesThisMonth,
+          activeToday,
+          pendingLeaves
+        };
+      })(),
+
+      // CRM stats
+      (async () => {
+        const totalLeads = await prisma.lead.count({ where: { isDeleted: false } });
+        const activeLeads = await prisma.lead.count({ where: { isDeleted: false, status: 'Active' } });
+        const convertedLeads = await prisma.lead.count({ where: { isDeleted: false, status: 'Converted' } });
+        const totalDeals = await prisma.deal.count({ where: { isDeleted: false } });
+        const activeDeals = await prisma.deal.count({ where: { isDeleted: false, status: 'Active' } });
+        const closedDeals = await prisma.deal.count({ where: { isDeleted: false, status: 'Closed' } });
+
+        return {
+          totalLeads,
+          activeLeads,
+          convertedLeads,
+          totalDeals,
+          activeDeals,
+          closedDeals
+        };
+      })(),
+
+      // Finance stats
+      (async () => {
+        const totalRevenue = await prisma.transaction.aggregate({ where: { type: 'Income', isDeleted: false }, _sum: { amount: true } });
+        const totalExpenses = await prisma.transaction.aggregate({ where: { type: 'Expense', isDeleted: false }, _sum: { amount: true } });
+        const pendingInvoices = await prisma.invoice.count({ where: { status: 'Pending', isDeleted: false } });
+        const overdueInvoices = await prisma.invoice.count({ where: { status: 'Overdue', isDeleted: false } });
+
+        return {
+          totalRevenue: totalRevenue._sum.amount || 0,
+          totalExpenses: totalExpenses._sum.amount || 0,
+          pendingInvoices,
+          overdueInvoices
+        };
+      })(),
+
+      // Sales data
+      prisma.sale.findMany({ where: { isDeleted: false } }),
+
+      // Leases data
+      prisma.lease.findMany({ where: { isDeleted: false } }),
+
+      // Revenue vs expense for 12 months
+      (async () => {
+        const monthsCount = 12;
+        const now = new Date();
+        const data: any[] = [];
+
+        for (let i = monthsCount - 1; i >= 0; i--) {
+          const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+          const monthLabel = monthStart.toLocaleString('default', { month: 'short', year: 'numeric' });
+
+          const revenue = await prisma.transaction.aggregate({
+            where: {
+              type: 'Income',
+              isDeleted: false,
+              date: { gte: monthStart, lte: monthEnd }
+            },
+            _sum: { amount: true }
+          });
+
+          const expenses = await prisma.transaction.aggregate({
+            where: {
+              type: 'Expense',
+              isDeleted: false,
+              date: { gte: monthStart, lte: monthEnd }
+            },
+            _sum: { amount: true }
+          });
+
+          data.push({
+            month: monthLabel,
+            revenue: revenue._sum.amount || 0,
+            expenses: expenses._sum.amount || 0
+          });
+        }
+
+        return data;
+      })(),
+
+      // All properties
+      prisma.property.findMany({
+        where: { isDeleted: false },
+        include: {
+          _count: {
+            select: { units: { where: { isDeleted: false } } }
+          }
+        }
+      })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        propsData,
+        hrData,
+        crmData,
+        financeData,
+        salesData,
+        leasesData,
+        revenueVsExpense,
+        allProperties
+      }
+    });
+  } catch (error) {
+    console.error('Get dashboard data error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch dashboard data',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
   }
 });
 

@@ -54,9 +54,6 @@ export declare function generateIncomeStatement(startDate: Date, endDate: Date, 
                 dealCode: string | null;
                 dealAmount: number;
                 commissionRate: number;
-                listingPriceSnapshot: number | null;
-                varianceAmount: number | null;
-                varianceType: string | null;
                 stage: string;
                 actualClosingDate: Date | null;
                 approvedBy: string | null;
@@ -69,6 +66,9 @@ export declare function generateIncomeStatement(startDate: Date, endDate: Date, 
                 valueBreakdown: import("@prisma/client/runtime/library").JsonValue | null;
                 dealDate: Date;
                 totalPaid: number;
+                listingPriceSnapshot: number | null;
+                varianceAmount: number | null;
+                varianceType: string | null;
             }) | null;
         } & {
             id: string;
@@ -135,9 +135,6 @@ export declare function generateIncomeStatement(startDate: Date, endDate: Date, 
                 dealCode: string | null;
                 dealAmount: number;
                 commissionRate: number;
-                listingPriceSnapshot: number | null;
-                varianceAmount: number | null;
-                varianceType: string | null;
                 stage: string;
                 actualClosingDate: Date | null;
                 approvedBy: string | null;
@@ -150,6 +147,9 @@ export declare function generateIncomeStatement(startDate: Date, endDate: Date, 
                 valueBreakdown: import("@prisma/client/runtime/library").JsonValue | null;
                 dealDate: Date;
                 totalPaid: number;
+                listingPriceSnapshot: number | null;
+                varianceAmount: number | null;
+                varianceType: string | null;
             }) | null;
         } & {
             id: string;
@@ -241,7 +241,6 @@ export declare function generateCashFlowStatement(startDate: Date, endDate: Date
             createdAt: Date;
             updatedAt: Date;
             attachments: import("@prisma/client/runtime/library").JsonValue | null;
-            tid: string | null;
             amount: number;
             journalEntryId: string | null;
             invoiceNumber: string;
@@ -274,10 +273,10 @@ export declare function generateCashFlowStatement(startDate: Date, endDate: Date
             isDeleted: boolean;
             tid: string | null;
             unitId: string;
-            isActive: boolean;
-            lastLoginAt: Date | null;
             tenantCode: string | null;
             advanceBalance: number;
+            isActive: boolean;
+            lastLoginAt: Date | null;
             outstandingBalance: number;
             profilePhotoUrl: string | null;
         } | null;
@@ -338,9 +337,6 @@ export declare function generateCashFlowStatement(startDate: Date, endDate: Date
             dealCode: string | null;
             dealAmount: number;
             commissionRate: number;
-            listingPriceSnapshot: number | null;
-            varianceAmount: number | null;
-            varianceType: string | null;
             stage: string;
             actualClosingDate: Date | null;
             approvedBy: string | null;
@@ -353,6 +349,9 @@ export declare function generateCashFlowStatement(startDate: Date, endDate: Date
             valueBreakdown: import("@prisma/client/runtime/library").JsonValue | null;
             dealDate: Date;
             totalPaid: number;
+            listingPriceSnapshot: number | null;
+            varianceAmount: number | null;
+            varianceType: string | null;
         }) | null;
     } & {
         id: string;
@@ -459,10 +458,10 @@ export declare function calculateOverdueInvoices(): Promise<{
             isDeleted: boolean;
             tid: string | null;
             unitId: string;
-            isActive: boolean;
-            lastLoginAt: Date | null;
             tenantCode: string | null;
             advanceBalance: number;
+            isActive: boolean;
+            lastLoginAt: Date | null;
             outstandingBalance: number;
             profilePhotoUrl: string | null;
         } | null;
@@ -471,7 +470,6 @@ export declare function calculateOverdueInvoices(): Promise<{
         createdAt: Date;
         updatedAt: Date;
         attachments: import("@prisma/client/runtime/library").JsonValue | null;
-        tid: string | null;
         amount: number;
         journalEntryId: string | null;
         invoiceNumber: string;

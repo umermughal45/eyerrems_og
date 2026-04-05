@@ -148,9 +148,9 @@ export declare class ReceiptService {
                 accountId: string;
                 credit: number;
                 debit: number;
-                sourceModule: string | null;
-                referenceDocumentId: string | null;
                 approvalMetadata: Prisma.JsonValue | null;
+                referenceDocumentId: string | null;
+                sourceModule: string | null;
                 constructionProjectId: string | null;
                 costCodeId: string | null;
                 entryId: string;
@@ -162,12 +162,12 @@ export declare class ReceiptService {
             updatedAt: Date;
             attachments: Prisma.JsonValue | null;
             date: Date;
+            approvedByUserId: string | null;
             voucherNo: string | null;
             description: string | null;
             narration: string | null;
             entryNumber: string;
             preparedByUserId: string | null;
-            approvedByUserId: string | null;
         }) | null;
         allocations: ({
             installment: {
@@ -297,9 +297,6 @@ export declare class ReceiptService {
             dealCode: string | null;
             dealAmount: number;
             commissionRate: number;
-            listingPriceSnapshot: number | null;
-            varianceAmount: number | null;
-            varianceType: string | null;
             stage: string;
             actualClosingDate: Date | null;
             approvedBy: string | null;
@@ -312,6 +309,9 @@ export declare class ReceiptService {
             valueBreakdown: Prisma.JsonValue | null;
             dealDate: Date;
             totalPaid: number;
+            listingPriceSnapshot: number | null;
+            varianceAmount: number | null;
+            varianceType: string | null;
         };
         receivedByUser: {
             id: string;

@@ -24,9 +24,9 @@ export declare function createLeadImportBatch(ctx: LeadImportUploadContext): Pro
     status: string;
     id: string;
     createdAt: Date;
-    createdByUserId: string;
     rowCount: number;
     fileName: string;
+    createdByUserId: string;
     filePath: string;
     fileHash: string;
     readyCount: number;

@@ -247,9 +247,6 @@ export declare function getFollowUpReminders(agentId?: string): Promise<{
             dealCode: string | null;
             dealAmount: number;
             commissionRate: number;
-            listingPriceSnapshot: number | null;
-            varianceAmount: number | null;
-            varianceType: string | null;
             stage: string;
             actualClosingDate: Date | null;
             approvedBy: string | null;
@@ -262,6 +259,9 @@ export declare function getFollowUpReminders(agentId?: string): Promise<{
             valueBreakdown: import("@prisma/client/runtime/library").JsonValue | null;
             dealDate: Date;
             totalPaid: number;
+            listingPriceSnapshot: number | null;
+            varianceAmount: number | null;
+            varianceType: string | null;
         })[];
         total: number;
     };
@@ -433,9 +433,6 @@ export declare function getOverdueFollowUps(agentId?: string): Promise<{
             dealCode: string | null;
             dealAmount: number;
             commissionRate: number;
-            listingPriceSnapshot: number | null;
-            varianceAmount: number | null;
-            varianceType: string | null;
             stage: string;
             actualClosingDate: Date | null;
             approvedBy: string | null;
@@ -448,6 +445,9 @@ export declare function getOverdueFollowUps(agentId?: string): Promise<{
             valueBreakdown: import("@prisma/client/runtime/library").JsonValue | null;
             dealDate: Date;
             totalPaid: number;
+            listingPriceSnapshot: number | null;
+            varianceAmount: number | null;
+            varianceType: string | null;
         } | null;
     } & {
         id: string;

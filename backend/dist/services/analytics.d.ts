@@ -51,12 +51,12 @@ export declare function getPropertyDashboard(propertyId: string): Promise<{
         createdBy: string | null;
         isDeleted: boolean;
         updatedBy: string | null;
+        completedAt: Date | null;
         tenantId: string | null;
         propertyId: string;
         assignedTo: string | null;
         priority: string;
         unitId: string | null;
-        completedAt: Date | null;
         issueTitle: string;
         issueDescription: string;
         assignedToName: string | null;

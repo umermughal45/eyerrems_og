@@ -1077,4 +1077,157 @@ router.get('/properties/occupancy-trend', auth_1.authenticate, async (req, res) 
     }
 });
 exports.default = router;
+;
+// Get dashboard data
+router.get('/dashboard', auth_1.authenticate, async (req, res) => {
+    try {
+        const [propsData, hrData, crmData, financeData, salesData, leasesData, revenueVsExpense, allProperties] = await Promise.all([
+            // Properties stats
+            (async () => {
+                const totalProperties = await client_2.default.property.count({ where: { isDeleted: false } });
+                const totalMaintenanceRequests = await client_2.default.maintenanceRequest.count({ where: { isDeleted: false } });
+                const activeProperties = await client_2.default.property.count({ where: { isDeleted: false, status: 'Active' } });
+                const totalUnits = await client_2.default.unit.count({ where: { isDeleted: false, property: { type: { not: 'house' }, isDeleted: false } } });
+                const occupiedUnits = await client_2.default.unit.count({ where: { isDeleted: false, status: 'Occupied', property: { type: { not: 'house' }, isDeleted: false } } });
+                const totalHouses = await client_2.default.property.count({ where: { type: 'house', isDeleted: false } });
+                const rentedOrSoldHouses = await client_2.default.property.count({ where: { type: 'house', isDeleted: false, status: { in: ['For Rent', 'Sold'] } } });
+                const monthlyRevenueResult = await client_2.default.unit.aggregate({ where: { isDeleted: false, status: 'Occupied' }, _sum: { rentAmount: true } });
+                const totalTenants = await client_2.default.tenant.count({ where: { isDeleted: false } });
+                const propertiesThisMonth = await client_2.default.property.count({ where: { isDeleted: false, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } });
+                const tenantsThisMonth = await client_2.default.tenant.count({ where: { isDeleted: false, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } });
+                const propertyTypeData = await client_2.default.property.groupBy({ by: ['type'], where: { isDeleted: false }, _count: { id: true } });
+                const recentActivities = (await client_2.default.activity.findMany({ where: { isDeleted: false }, orderBy: { createdAt: 'desc' }, take: 10, include: { user: true } })).map(activity => ({
+                    ...activity,
+                    timeAgo: getTimeAgo(activity.createdAt)
+                }));
+                return {
+                    totalProperties,
+                    totalMaintenanceRequests,
+                    activeProperties,
+                    totalUnits,
+                    occupiedUnits,
+                    totalHouses,
+                    rentedOrSoldHouses,
+                    monthlyRevenue: monthlyRevenueResult._sum.rentAmount || 0,
+                    totalTenants,
+                    propertiesThisMonth,
+                    tenantsThisMonth,
+                    propertyTypeData,
+                    recentActivities
+                };
+            })(),
+            // HR stats
+            (async () => {
+                const totalEmployees = await client_2.default.employee.count({ where: { isDeleted: false } });
+                const employeesThisMonth = await client_2.default.employee.count({ where: { isDeleted: false, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } });
+                const activeToday = await client_2.default.attendance.count({ where: { date: new Date().toISOString().split('T')[0], status: 'Present' } });
+                const pendingLeaves = await client_2.default.leaveRequest.count({ where: { status: 'Pending' } });
+                return {
+                    totalEmployees,
+                    employeesThisMonth,
+                    activeToday,
+                    pendingLeaves
+                };
+            })(),
+            // CRM stats
+            (async () => {
+                const totalLeads = await client_2.default.lead.count({ where: { isDeleted: false } });
+                const activeLeads = await client_2.default.lead.count({ where: { isDeleted: false, status: 'Active' } });
+                const convertedLeads = await client_2.default.lead.count({ where: { isDeleted: false, status: 'Converted' } });
+                const totalDeals = await client_2.default.deal.count({ where: { isDeleted: false } });
+                const activeDeals = await client_2.default.deal.count({ where: { isDeleted: false, status: 'Active' } });
+                const closedDeals = await client_2.default.deal.count({ where: { isDeleted: false, status: 'Closed' } });
+                return {
+                    totalLeads,
+                    activeLeads,
+                    convertedLeads,
+                    totalDeals,
+                    activeDeals,
+                    closedDeals
+                };
+            })(),
+            // Finance stats
+            (async () => {
+                const totalRevenue = await client_2.default.transaction.aggregate({ where: { type: 'Income', isDeleted: false }, _sum: { amount: true } });
+                const totalExpenses = await client_2.default.transaction.aggregate({ where: { type: 'Expense', isDeleted: false }, _sum: { amount: true } });
+                const pendingInvoices = await client_2.default.invoice.count({ where: { status: 'Pending', isDeleted: false } });
+                const overdueInvoices = await client_2.default.invoice.count({ where: { status: 'Overdue', isDeleted: false } });
+                return {
+                    totalRevenue: totalRevenue._sum.amount || 0,
+                    totalExpenses: totalExpenses._sum.amount || 0,
+                    pendingInvoices,
+                    overdueInvoices
+                };
+            })(),
+            // Sales data
+            client_2.default.sale.findMany({ where: { isDeleted: false } }),
+            // Leases data
+            client_2.default.lease.findMany({ where: { isDeleted: false } }),
+            // Revenue vs expense for 12 months
+            (async () => {
+                const monthsCount = 12;
+                const now = new Date();
+                const data = [];
+                for (let i = monthsCount - 1; i >= 0; i--) {
+                    const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+                    const monthLabel = monthStart.toLocaleString('default', { month: 'short', year: 'numeric' });
+                    const revenue = await client_2.default.transaction.aggregate({
+                        where: {
+                            type: 'Income',
+                            isDeleted: false,
+                            date: { gte: monthStart, lte: monthEnd }
+                        },
+                        _sum: { amount: true }
+                    });
+                    const expenses = await client_2.default.transaction.aggregate({
+                        where: {
+                            type: 'Expense',
+                            isDeleted: false,
+                            date: { gte: monthStart, lte: monthEnd }
+                        },
+                        _sum: { amount: true }
+                    });
+                    data.push({
+                        month: monthLabel,
+                        revenue: revenue._sum.amount || 0,
+                        expenses: expenses._sum.amount || 0
+                    });
+                }
+                return data;
+            })(),
+            // All properties
+            client_2.default.property.findMany({
+                where: { isDeleted: false },
+                include: {
+                    _count: {
+                        select: { units: { where: { isDeleted: false } } }
+                    }
+                }
+            })
+        ]);
+        res.json({
+            success: true,
+            data: {
+                propsData,
+                hrData,
+                crmData,
+                financeData,
+                salesData,
+                leasesData,
+                revenueVsExpense,
+                allProperties
+            }
+        });
+    }
+    catch (error) {
+        console.error('Get dashboard data error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch dashboard data',
+            message: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+});
+exports.default = router;
 //# sourceMappingURL=stats.js.map

@@ -195,7 +195,6 @@ export declare function getPayrollReminders(): Promise<{
         baseSalary: number;
         bonus: number;
         netPay: number;
-        remainingBalance: number;
         advanceDeduction: number;
         epfAmount: number;
         etfAmount: number;
@@ -205,6 +204,7 @@ export declare function getPayrollReminders(): Promise<{
         overtimeAmount: number;
         paymentStatus: string;
         payslipUrl: string | null;
+        remainingBalance: number;
     })[];
     overdue: ({
         employee: {
@@ -235,7 +235,6 @@ export declare function getPayrollReminders(): Promise<{
         baseSalary: number;
         bonus: number;
         netPay: number;
-        remainingBalance: number;
         advanceDeduction: number;
         epfAmount: number;
         etfAmount: number;
@@ -245,6 +244,7 @@ export declare function getPayrollReminders(): Promise<{
         overtimeAmount: number;
         paymentStatus: string;
         payslipUrl: string | null;
+        remainingBalance: number;
     })[];
     current: ({
         employee: {
@@ -275,7 +275,6 @@ export declare function getPayrollReminders(): Promise<{
         baseSalary: number;
         bonus: number;
         netPay: number;
-        remainingBalance: number;
         advanceDeduction: number;
         epfAmount: number;
         etfAmount: number;
@@ -285,6 +284,7 @@ export declare function getPayrollReminders(): Promise<{
         overtimeAmount: number;
         paymentStatus: string;
         payslipUrl: string | null;
+        remainingBalance: number;
     })[];
     summary: {
         total: number;

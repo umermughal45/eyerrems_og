@@ -183,11 +183,11 @@ if (process.env.NODE_ENV !== 'test') {
 }
 // CORS configuration - MUST be before other middleware
 const allowedOrigins = [
-    'https://eyer-rems-v1-p3c3.vercel.app',
+    'https://eyerrems-og.vercel.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5173',
-    'https://eyer-rems-v1-production-ee31.up.railway.app'
+    'https://eyerremsog-production.up.railway.app/api'
 ];
 const corsOptions = {
     origin: (origin, callback) => {
