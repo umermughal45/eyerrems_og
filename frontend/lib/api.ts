@@ -15,7 +15,7 @@ import axios from 'axios'
 const isDevelopment = process.env.NODE_ENV !== 'production';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (isDevelopment
   ? 'http://localhost:3001'
-  : 'https://eyer-rems-v1-production-ee31.up.railway.app');
+  : 'https://eyerremsog-production.up.railway.app/');
 
 // Clean up trailing slashes and /api suffixes to establish a pure base URL
 let normalizedBaseUrl = API_URL.replace(/\/+$/, '').replace(/\/api$/, '') + '/api';
