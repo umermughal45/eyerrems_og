@@ -1150,3 +1150,7 @@
 {"level":"\u001b[33mwarn\u001b[39m","message":"\u001b[33m⚠️ Redis queue disabled — running in development mode (synchronous reminders)\u001b[39m","timestamp":"2026-04-04 23:50:33:5033"}
 {"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m✅ Subsidiaries routes mounted at /api/subsidiaries\u001b[39m","timestamp":"2026-04-04 23:50:33:5033"}
 {"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAdmin role already has 211 explicit permissions\u001b[39m","timestamp":"2026-04-04 23:50:33:5033"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m✅ Environment variables validated successfully\u001b[39m","timestamp":"2026-04-05 21:21:50:2150"}
+{"level":"\u001b[33mwarn\u001b[39m","message":"\u001b[33m⚠️ Redis queue disabled — running in development mode (synchronous reminders)\u001b[39m","timestamp":"2026-04-05 21:21:51:2151"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m✅ Subsidiaries routes mounted at /api/subsidiaries\u001b[39m","timestamp":"2026-04-05 21:21:51:2151"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAdmin role already has 211 explicit permissions\u001b[39m","timestamp":"2026-04-05 21:21:51:2151"}

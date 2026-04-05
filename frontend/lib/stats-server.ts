@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 
 // Helper function to format time ago
 function getTimeAgo(date: Date): string {
@@ -23,16 +23,34 @@ function getTimeAgo(date: Date): string {
   return `${diffInMonths} month ago`
 }
 
+import { cookies } from 'next/headers';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 async function apiCall(endpoint: string) {
-  const token = localStorage.getItem('token');
-  const response = await axios.get(`${API_BASE_URL}${endpoint}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data.data;
+  let token = null;
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('token');
+  } else {
+    try {
+      const cookieStore = await cookies();
+      token = cookieStore.get('token')?.value;
+    } catch (e) {
+      // Handle the case where cookies() cannot be called
+    }
+  }
+
+  try {
+    const response = await axios.get(`${API_BASE_URL}${endpoint}`, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`[stats-server] Error fetching ${endpoint}:`, error instanceof Error ? error.message : String(error));
+    return null;
+  }
 }
 
 export async function getPropertiesStatsServer() {
@@ -76,44 +94,97 @@ export async function getFinancePageStatsServer() {
 }
 
 export async function getPropertiesDetailsServer(searchTerm?: string) {
-  const token = localStorage.getItem('token');
+  let token = null;
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('token');
+  } else {
+    try {
+      const cookieStore = await cookies();
+      token = cookieStore.get('token')?.value;
+    } catch (e) {}
+  }
   const endpoint = searchTerm
     ? `/properties?search=${searchTerm}`
     : '/properties';
-  const response = await axios.get(`${API_BASE_URL}${endpoint}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data.data;
+  
+  try {
+    const response = await axios.get(`${API_BASE_URL}${endpoint}`, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`[stats-server] Error fetching ${endpoint}:`, error instanceof Error ? error.message : String(error));
+    return [];
+  }
 }
 
 export async function getTenantsDetailsServer() {
-  const token = localStorage.getItem('token');
-  const response = await axios.get(`${API_BASE_URL}/tenants`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data.data;
+  let token = null;
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('token');
+  } else {
+    try {
+      const cookieStore = await cookies();
+      token = cookieStore.get('token')?.value;
+    } catch (e) {}
+  }
+  try {
+    const response = await axios.get(`${API_BASE_URL}/tenants`, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`[stats-server] Error fetching /tenants:`, error instanceof Error ? error.message : String(error));
+    return [];
+  }
 }
 
 export async function getSalesDetailsServer() {
-  const token = localStorage.getItem('token');
-  const response = await axios.get(`${API_BASE_URL}/sales`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data.data;
+  let token = null;
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('token');
+  } else {
+    try {
+      const cookieStore = await cookies();
+      token = cookieStore.get('token')?.value;
+    } catch (e) {}
+  }
+  try {
+    const response = await axios.get(`${API_BASE_URL}/sales`, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`[stats-server] Error fetching /sales:`, error instanceof Error ? error.message : String(error));
+    return [];
+  }
 }
 
 export async function getEmployeesDetailsServer() {
-  const token = localStorage.getItem('token');
-  const response = await axios.get(`${API_BASE_URL}/employees`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data.data;
+  let token = null;
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('token');
+  } else {
+    try {
+      const cookieStore = await cookies();
+      token = cookieStore.get('token')?.value;
+    } catch (e) {}
+  }
+  try {
+    const response = await axios.get(`${API_BASE_URL}/employees`, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`[stats-server] Error fetching /employees:`, error instanceof Error ? error.message : String(error));
+    return [];
+  }
 }

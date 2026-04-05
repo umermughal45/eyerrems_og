@@ -34,7 +34,7 @@ type User = {
 // Generate or retrieve unique deviceId for this tab/session
 const getOrCreateDeviceId = (): string => {
   if (typeof window === "undefined") return ""
-  
+
   let deviceId = sessionStorage.getItem("deviceId")
   if (!deviceId) {
     // Generate a unique deviceId for this tab
@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Initialize deviceId for this tab
     getOrCreateDeviceId()
-    
+
     // Check if user is already logged in (using localStorage for persistence)
     const token = localStorage.getItem("token")
     const storedUser = localStorage.getItem("erp-user")
@@ -146,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const loginTimestamp = parseInt(loginTime, 10)
       const now = Date.now()
       const hoursSinceLogin = (now - loginTimestamp) / (1000 * 60 * 60)
-      
+
       // If 24 hours have passed since login, clear session
       if (hoursSinceLogin >= 24) {
         // Check if user was a role-based user before clearing
@@ -159,15 +159,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return false
           }
         })() : false
-        
+
         localStorage.removeItem("token")
+        document.cookie = 'token=; Max-Age=0; path=/';
         localStorage.removeItem("erp-user")
         localStorage.removeItem("loginTime")
         sessionStorage.removeItem("deviceId")
         sessionStorage.removeItem("lastActivity")
         setUser(null)
         setLoading(false)
-        
+
         // Redirect based on user type
         if (isRoleBasedUser) {
           window.location.href = "/roles/login"
@@ -221,7 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const loginTimestamp = parseInt(loginTime, 10)
         const now = Date.now()
         const hoursSinceLogin = (now - loginTimestamp) / (1000 * 60 * 60)
-        
+
         // If 24 hours have passed since login, clear session and redirect
         if (hoursSinceLogin >= 24) {
           // Check if user was a role-based user before clearing
@@ -234,14 +235,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               return false
             }
           })() : false
-          
+
           localStorage.removeItem("token")
+          document.cookie = 'token=; Max-Age=0; path=/';
           localStorage.removeItem("erp-user")
           localStorage.removeItem("loginTime")
           sessionStorage.removeItem("deviceId")
           sessionStorage.removeItem("lastActivity")
           setUser(null)
-          
+
           // Redirect based on user type
           if (isRoleBasedUser) {
             window.location.href = "/roles/login"
@@ -271,7 +273,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Get or create deviceId for this tab
       const deviceId = getOrCreateDeviceId()
-      
+
       const response = await apiService.auth.login({ email, password, deviceId })
       const data = response.data as any
       const { token, user: userData, deviceId: returnedDeviceId, csrfToken, sessionId } = data
@@ -291,10 +293,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Store token in localStorage for persistence across reloads
       localStorage.setItem("token", token)
-      
+      document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`;
+
       // Store login time for 24-hour session expiration
       localStorage.setItem("loginTime", Date.now().toString())
-      
+
       // Store last activity timestamp (for activity tracking)
       sessionStorage.setItem("lastActivity", Date.now().toString())
 
@@ -328,7 +331,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Get or create deviceId for this tab
       const deviceId = getOrCreateDeviceId()
-      
+
       const response = await apiService.auth.inviteLogin({ token, password, username, deviceId })
       const data = response.data as any
       const { token: jwtToken, user: userData, message, deviceId: returnedDeviceId, csrfToken, sessionId } = data
@@ -348,13 +351,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Store token in localStorage for persistence across reloads
       localStorage.setItem("token", jwtToken)
-      
+      document.cookie = `token=${jwtToken}; path=/; max-age=86400; SameSite=Lax`;
+
       // Store login time for 24-hour session expiration
       localStorage.setItem("loginTime", Date.now().toString())
-      
+
       // Store last activity timestamp (for activity tracking)
       sessionStorage.setItem("lastActivity", Date.now().toString())
-      
+
       // Store user data in localStorage for persistence
       const userObj: User = {
         id: userData.id,
@@ -383,7 +387,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Get or create deviceId for this tab
       const deviceId = getOrCreateDeviceId()
-      
+
       const response = await apiService.auth.roleLogin({ username, password, deviceId })
       const data = response.data as any
       const { token, user: userData, deviceId: returnedDeviceId, csrfToken, sessionId } = data
@@ -403,10 +407,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Store token in localStorage for persistence across reloads
       localStorage.setItem("token", token)
-      
+
       // Store login time for 24-hour session expiration
       localStorage.setItem("loginTime", Date.now().toString())
-      
+
       // Store last activity timestamp (for activity tracking)
       sessionStorage.setItem("lastActivity", Date.now().toString())
 
@@ -438,6 +442,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== "undefined") {
       const currentUser = user
       localStorage.removeItem("token")
+      document.cookie = 'token=; Max-Age=0; path=/';
       localStorage.removeItem("erp-user")
       localStorage.removeItem("loginTime")
       const authType = localStorage.getItem("auth-type")
@@ -445,7 +450,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.removeItem("deviceId")
       sessionStorage.removeItem("lastActivity")
       setUser(null)
-      
+
       // Redirect based on user type
       if (currentUser?.companyId) {
         // Company users go to standard login now
