@@ -30,14 +30,17 @@ const UNIT_TYPES = [
   "Studio",
   "1BHK",
   "2BHK",
+  "3BHK",
   "Shop",
   "Office",
+  "Apartment",
   "Warehouse",
+  "Penthouse",
 ] as const
 
 const UTILITIES = ["Water", "Electricity", "Gas", "Internet"] as const
 
-type UnitStatus = "Vacant" | "Occupied" | "Under Maintenance"
+type UnitStatus = "VACANT" | "OCCUPIED" | "UNDER_MAINTENANCE" | "RESERVED" | "INACTIVE"
 
 type AddUnitFormState = {
   tid: string
@@ -49,8 +52,10 @@ type AddUnitFormState = {
   unitType: string
   sizeSqFt: string
   rentPrice: string
+  salePrice: string
   securityDeposit: string
   description: string
+  notes: string
   utilitiesIncluded: string[]
 }
 
@@ -60,12 +65,14 @@ const DEFAULT_FORM_STATE: AddUnitFormState = {
   propertyId: "",
   blockId: "",
   floorId: "",
-  status: "Vacant",
+  status: "VACANT",
   unitType: "",
   sizeSqFt: "",
   rentPrice: "",
+  salePrice: "",
   securityDeposit: "",
   description: "",
+  notes: "",
   utilitiesIncluded: [],
 }
 
@@ -90,13 +97,11 @@ export function AddUnitDialog({ open, onOpenChange, onSuccess, unit, defaultProp
       const propertyId = unit.propertyId || unit.property?.id || ""
       const blockId = unit.blockId || unit.block?.id || ""
       const floorId = unit.floorId || unit.floor?.id || ""
-      const statusRaw = (unit.status || "Vacant").toString()
-      const normalizedStatus: UnitStatus =
-        statusRaw === "Occupied" || statusRaw.toLowerCase() === "occupied"
-          ? "Occupied"
-          : statusRaw === "Under Maintenance"
-            ? "Under Maintenance"
-            : "Vacant"
+      const statusRaw = (unit.status || "VACANT").toString().toUpperCase().replace(/ /g, "_")
+      const validStatuses: UnitStatus[] = ["VACANT", "OCCUPIED", "UNDER_MAINTENANCE", "RESERVED", "INACTIVE"]
+      const normalizedStatus: UnitStatus = validStatuses.includes(statusRaw as UnitStatus)
+        ? (statusRaw as UnitStatus)
+        : "VACANT"
 
       setFormData({
         tid: unit.tid || "",
@@ -105,22 +110,13 @@ export function AddUnitDialog({ open, onOpenChange, onSuccess, unit, defaultProp
         blockId,
         floorId,
         status: normalizedStatus,
-        unitType: unit.type || "",
-        sizeSqFt:
-          typeof unit.sizeSqFt === "number" && !Number.isNaN(unit.sizeSqFt)
-            ? String(unit.sizeSqFt)
-            : "",
-        rentPrice:
-          typeof unit.monthlyRent === "number"
-            ? String(unit.monthlyRent)
-            : unit.monthlyRent || unit.rent
-            ? String(unit.monthlyRent || unit.rent)
-            : "",
-        securityDeposit:
-          typeof unit.securityDeposit === "number" && !Number.isNaN(unit.securityDeposit)
-            ? String(unit.securityDeposit)
-            : "",
+        unitType: unit.unitType || unit.type || "",
+        sizeSqFt: unit.sizeSqFt != null ? String(unit.sizeSqFt) : "",
+        rentPrice: unit.monthlyRent != null ? String(unit.monthlyRent) : "",
+        salePrice: unit.salePrice != null ? String(unit.salePrice) : "",
+        securityDeposit: unit.securityDeposit != null ? String(unit.securityDeposit) : "",
         description: unit.description || "",
+        notes: unit.notes || "",
         utilitiesIncluded: Array.isArray(unit.utilitiesIncluded) ? unit.utilitiesIncluded : [],
       })
       if (propertyId) {
@@ -269,7 +265,7 @@ export function AddUnitDialog({ open, onOpenChange, onSuccess, unit, defaultProp
     if (Object.keys(validationErrors).length > 0) return
 
     // Business rule: block creating units directly as Occupied
-    if (!isEditMode && formData.status === "Occupied") {
+    if (!isEditMode && formData.status === "OCCUPIED") {
       showErrorToast("Action Blocked", "Units cannot be created as occupied. Create the lease first, then the unit will be marked occupied.")
       return
     }
@@ -539,9 +535,11 @@ export function AddUnitDialog({ open, onOpenChange, onSuccess, unit, defaultProp
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Vacant">Vacant</SelectItem>
-                  <SelectItem value="Occupied">Occupied</SelectItem>
-                  <SelectItem value="Under Maintenance">Under Maintenance</SelectItem>
+                  <SelectItem value="VACANT">Vacant</SelectItem>
+                  <SelectItem value="OCCUPIED">Occupied</SelectItem>
+                  <SelectItem value="UNDER_MAINTENANCE">Under Maintenance</SelectItem>
+                  <SelectItem value="RESERVED">Reserved</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
                 </SelectContent>
               </Select>
               {errors.status && <p className="text-xs text-destructive">{errors.status}</p>}

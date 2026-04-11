@@ -125,7 +125,7 @@ router.get('/properties', authenticate, async (req: AuthRequest, res: Response) 
     const occupiedUnits = await prisma.unit.count({
       where: {
         isDeleted: false,
-        status: 'Occupied',
+        status: 'OCCUPIED',
         property: {
           type: { not: 'house' },
           isDeleted: false,
@@ -136,7 +136,7 @@ router.get('/properties', authenticate, async (req: AuthRequest, res: Response) 
     const vacantUnits = await prisma.unit.count({
       where: {
         isDeleted: false,
-        status: 'Vacant',
+        status: 'VACANT',
         property: {
           type: { not: 'house' },
           isDeleted: false,
@@ -172,7 +172,7 @@ router.get('/properties', authenticate, async (req: AuthRequest, res: Response) 
     const monthlyRevenueResult = await prisma.unit.aggregate({
       where: {
         isDeleted: false,
-        status: 'Occupied',
+        status: 'OCCUPIED',
       },
       _sum: {
         monthlyRent: true,
@@ -1249,10 +1249,10 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response) =
         const totalMaintenanceRequests = await prisma.maintenanceRequest.count({ where: { isDeleted: false } });
         const activeProperties = await prisma.property.count({ where: { isDeleted: false, status: 'Active' } });
         const totalUnits = await prisma.unit.count({ where: { isDeleted: false, property: { type: { not: 'house' }, isDeleted: false } } });
-        const occupiedUnits = await prisma.unit.count({ where: { isDeleted: false, status: 'Occupied', property: { type: { not: 'house' }, isDeleted: false } } });
+        const occupiedUnits = await prisma.unit.count({ where: { isDeleted: false, status: 'OCCUPIED', property: { type: { not: 'house' }, isDeleted: false } } });
         const totalHouses = await prisma.property.count({ where: { type: 'house', isDeleted: false } });
         const rentedOrSoldHouses = await prisma.property.count({ where: { type: 'house', isDeleted: false, status: { in: ['For Rent', 'Sold'] } } });
-        const monthlyRevenueResult = await prisma.unit.aggregate({ where: { isDeleted: false, status: 'Occupied' }, _sum: { monthlyRent: true } });
+        const monthlyRevenueResult = await prisma.unit.aggregate({ where: { isDeleted: false, status: 'OCCUPIED' }, _sum: { monthlyRent: true } });
         const totalTenants = await prisma.tenant.count({ where: { isDeleted: false } });
         const propertiesThisMonth = await prisma.property.count({ where: { isDeleted: false, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } });
         const tenantsThisMonth = await prisma.tenant.count({ where: { isDeleted: false, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } });

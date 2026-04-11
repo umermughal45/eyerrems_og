@@ -21,6 +21,7 @@ import multer from 'multer';
 import logger from '../utils/logger';
 import { UnifiedSearchService } from '../services/unified-search-service';
 import { IdService } from '../utils/id-service';
+import { TransactionIdentityEngine } from '../services/transactionIdentity.service';
 
 const router = (express as any).Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -111,15 +112,15 @@ const createCommunicationSchema = z.object({
 // Helper: Generate codes (now using centralized service)
 // These functions are kept for backward compatibility but delegate to the centralized service
 async function generateLeadCode(): Promise<string> {
-  return await generateSystemId('lead');
+  return await IdService.generateEntityId('LD');
 }
 
 async function generateClientCode(): Promise<string> {
-  return await generateSystemId('cli');
+  return await IdService.generateEntityId('CL');
 }
 
 async function generateDealerCode(): Promise<string> {
-  return await generateSystemId('deal');
+  return await IdService.generateEntityId('DL');
 }
 
 async function generateDealCode(): Promise<string> {
@@ -446,9 +447,10 @@ router.post('/leads/:id/convert', requireAuth, requirePermission('crm.leads.upda
     }
 
     // Preserve immutable lineage TID from lead
-    const tid = lead.tid || await IdService.generateTID();
+    const tid = lead.tid || await TransactionIdentityEngine.generateTransactionID();
 
-    const clientCode = await generateClientCode();
+    // Generate LD-CLI-#### code to signal this client was converted from a lead
+    const clientCode = await IdService.generateConvertedClientCode();
     const lastClient = await prisma.client.findFirst({ orderBy: { createdAt: 'desc' } });
     const nextSrNo = (lastClient?.srNo || 0) + 1;
 
@@ -461,7 +463,7 @@ router.post('/leads/:id/convert', requireAuth, requirePermission('crm.leads.upda
         phone: lead.phone,
         clientCode,
         srNo: nextSrNo,
-        clientNo: `CL-${String(nextSrNo).padStart(4, '0')}`,
+        clientNo: clientCode,
         address: lead.address,
         city: lead.city,
         cnic: lead.cnic,
@@ -827,11 +829,35 @@ router.get('/deals', requireAuth, requirePermission('crm.deals.view'), async (re
 router.post('/deals', requireAuth, requirePermission('crm.deals.create'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const parsedData = createDealSchema.parse(req.body);
-    const { manualUniqueId, tid, ...data } = parsedData as any;
-    
+    const { manualUniqueId, tid: requestedTid, ...data } = parsedData as any;
+
+    // Auto-inherit TID from the selected client (the backbone of the CRM relationship chain)
+    let tid = requestedTid?.trim() || undefined;
+    if (!tid && data.clientId) {
+      const clientRecord = await prisma.client.findUnique({
+        where: { id: data.clientId },
+        select: { tid: true },
+      });
+      if (clientRecord?.tid) {
+        tid = clientRecord.tid;
+      }
+    }
+
     // Validate TID - must be unique across Property, Deal, and Client
-    if (tid) {
-      await validateTID(tid.trim());
+    // Skip uniqueness check if TID is inherited from client (it already exists on client)
+    if (tid && !requestedTid) {
+      // Inherited from client — skip global uniqueness check (client already owns this TID)
+      // Just ensure no OTHER deal already has this TID
+      const existingDeal = await prisma.deal.findFirst({
+        where: { tid, isDeleted: false },
+        select: { id: true },
+      });
+      if (existingDeal) {
+        // TID already used on another deal — generate a new one
+        tid = await TransactionIdentityEngine.generateTransactionID();
+      }
+    } else if (tid) {
+      await validateTID(tid);
     }
 
     // Validate manual unique ID if provided
@@ -851,7 +877,7 @@ router.post('/deals', requireAuth, requirePermission('crm.deals.create'), async 
     const { DealService } = await import('../services/deal-service');
     
     const deal = await DealService.createDeal({
-      tid: tid?.trim() || undefined,
+      tid: tid || undefined,
       title: data.title,
       clientId: data.clientId,
       propertyId: data.propertyId,
@@ -1361,7 +1387,7 @@ router.post('/clients/:id/convert-to-tenant', requireAuth, requirePermission('cr
     // Update unit status
     await prisma.unit.update({
       where: { id: unitId },
-      data: { status: 'Occupied' },
+      data: { status: 'OCCUPIED' },
     });
 
     // Create lease if lease details provided

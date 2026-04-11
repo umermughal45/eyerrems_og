@@ -14,16 +14,26 @@ const router = (express as any).Router();
 // Validation schemas
 const createSaleSchema = z.object({
   propertyId: z.string().uuid('Invalid property ID'),
+  buyerId: z.string().uuid('Invalid buyer ID').optional(),
+  dealerId: z.string().uuid().optional(),
   saleValue: z.number().positive('Sale value must be positive'),
   commissionRate: z.number().min(0).max(100).optional(),
   saleDate: z.string().datetime().or(z.date()).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
   status: z.enum(['Completed', 'Pending', 'Cancelled']).optional(),
-  notes: z.string().optional(),
   actualPropertyValue: z.number().optional(),
   profit: z.number().optional(),
-  documents: z.array(z.string()).optional(), // Array of document URLs
-  dealerId: z.string().uuid().optional(), // Optional dealer ID
-  tid: z.string().min(1, "TID is required"),
+  notes: z.string().optional(),
+  documents: z.array(z.string()).optional(),
+  tid: z.string().min(1, 'TID is required'),
+  // Legacy / extra fields accepted but ignored if not in schema
+  saleId: z.string().optional(),
+  sellerId: z.string().optional(),
+  salePrice: z.number().optional(),
+  advancePayment: z.number().optional(),
+  remainingAmount: z.number().optional(),
+  dealDate: z.string().optional(),
+  paymentStatus: z.string().optional(),
+  saleStatus: z.string().optional(),
 });
 
 const updateSaleSchema = createSaleSchema.partial();
@@ -348,63 +358,67 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
       return errorResponse(res, 'Property not found', 404);
     }
 
-    // Calculate commission (default 2%)
-    const commissionRate = data.commissionRate || 2.0;
-    const commission = (data.saleValue * commissionRate) / 100;
+    // Verify buyer exists if provided
+    if (data.buyerId) {
+      const buyer = await prisma.buyer.findFirst({
+        where: { id: data.buyerId, isDeleted: false },
+      });
+      if (!buyer) {
+        return errorResponse(res, 'Buyer not found', 404);
+      }
+    }
 
-    // Get actual property value (from property or provided value)
-    const actualPropertyValue = data.actualPropertyValue || property.totalArea || property.size || 0;
-    
-    // Calculate profit
-    const profit = data.profit !== undefined ? data.profit : (data.saleValue - actualPropertyValue);
+    // Check if property is already sold
+    const existingSale = await prisma.sale.findFirst({
+      where: {
+        propertyId: data.propertyId,
+        status: { in: ['Completed'] },
+        isDeleted: false,
+      },
+    });
 
-    // Convert saleDate to Date if provided
-    const saleDate = data.saleDate
-      ? typeof data.saleDate === 'string'
-        ? new Date(data.saleDate)
-        : data.saleDate
+    if (existingSale) {
+      return errorResponse(res, 'Property is already sold or in sale process', 400);
+    }
+
+    const saleValue = data.saleValue || data.salePrice || 0;
+    const saleDate = data.saleDate || data.dealDate
+      ? new Date((data.saleDate || data.dealDate) as string)
       : new Date();
 
     const sale = await prisma.sale.create({
       data: {
         propertyId: data.propertyId,
-        saleValue: data.saleValue,
-        commission,
-        commissionRate,
+        buyerId: data.buyerId || null,
+        dealerId: data.dealerId || null,
+        saleValue,
+        commission: data.commissionRate ? (saleValue * data.commissionRate) / 100 : 0,
+        commissionRate: data.commissionRate || 2.0,
         saleDate,
         status: data.status || 'Completed',
+        actualPropertyValue: data.actualPropertyValue || 0,
+        profit: data.profit || 0,
         notes: data.notes || null,
-        actualPropertyValue: actualPropertyValue,
-        profit: profit,
-        documents: data.documents && Array.isArray(data.documents) && data.documents.length > 0 ? data.documents : undefined,
-        dealerId: data.dealerId || null,
+        documents: data.documents && data.documents.length > 0 ? data.documents : undefined,
         tid: data.tid,
       },
       include: {
-        property: true,
-        buyers: true,
+        property: {
+          select: { id: true, name: true, address: true, type: true },
+        },
+        buyer: {
+          select: { id: true, name: true, phone: true, email: true },
+        },
         dealer: true,
       },
     });
 
-    // Update property status to "Sold" when sale is created
-    // This marks the property as sold regardless of sale status
+    // Update property status
+    const propertyStatus = (data.status || data.saleStatus) === 'Completed' ? 'Sold' : 'For Sale';
     await prisma.property.update({
       where: { id: data.propertyId },
-      data: { status: 'Sold' },
+      data: { status: propertyStatus },
     });
-
-    // Note: FinanceLedger now requires a dealId, but Sales don't have a direct Deal relation
-    // Finance ledger entries for Sales should be created through Deal relationships if needed
-    // Commenting out FinanceLedger creation for Sales until Sales are linked to Deals
-    // if (sale.status === 'Completed' || sale.status === 'completed') {
-    //   try {
-    //     // Find or create a Deal for this Sale to link FinanceLedger
-    //     // For now, skipping FinanceLedger creation for Sales
-    //   } catch (ledgerErr) {
-    //     logger.error('Failed to update finance ledger for sale:', ledgerErr);
-    //   }
-    // }
 
     // Log activity
     await createActivity({

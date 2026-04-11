@@ -3,12 +3,13 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Home, Users, DollarSign, Loader2 } from "lucide-react"
+import { ArrowLeft, Home, Users, TrendingUp, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { apiService } from "@/lib/api"
+import { formatCurrency } from "@/lib/utils"
 
 export default function OccupiedUnitsDetailsPage() {
   const router = useRouter()
@@ -100,11 +101,11 @@ export default function OccupiedUnitsDetailsPage() {
           <Card className="p-6 relative overflow-hidden bg-white dark:bg-[#0d212c] rounded-xl border-l-4 border-l-[#24344c] dark:border-l-[#0d212c] shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)]">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl px-0 bg-[linear-gradient(135deg,#22c55e,#15803d)] text-white shadow-lg transition-transform duration-300 hover:scale-110">
-                <DollarSign className="h-6 w-6 text-white" />
+                <TrendingUp className="h-6 w-6 text-white" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Monthly Revenue</p>
-                <p className="text-2xl font-bold">Rs {stats.monthlyRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold">{formatCurrency(stats.monthlyRevenue)}</p>
               </div>
             </div>
           </Card>
@@ -137,7 +138,7 @@ export default function OccupiedUnitsDetailsPage() {
                     <TableCell>{unit.block?.name || "N/A"}</TableCell>
                     <TableCell>{unit.unitName || "N/A"}</TableCell>
                     <TableCell>{unit.tenantName || "N/A"}</TableCell>
-                    <TableCell>Rs {parseFloat(unit.monthlyRent || 0).toLocaleString()}</TableCell>
+                    <TableCell>{formatCurrency(parseFloat(unit.monthlyRent || 0))}</TableCell>
                     <TableCell>
                       <Badge variant="default">{unit.status || "Occupied"}</Badge>
                     </TableCell>

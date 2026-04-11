@@ -251,6 +251,7 @@ export function LeadsView() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Lead ID</TableHead>
                 <TableHead>TID</TableHead>
                 <TableHead>Lead Name</TableHead>
                 <TableHead>Status</TableHead>
@@ -268,7 +269,10 @@ export function LeadsView() {
               {filteredLeads.map((lead) => (
                 <TableRow key={lead.id} className="hover:bg-muted/50">
                   <TableCell>
-                    <span className="font-mono text-xs">{lead.tid || "—"}</span>
+                    <span className="font-mono text-xs font-semibold text-primary">{lead.leadCode || "—"}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-mono text-xs text-muted-foreground">{lead.tid || "—"}</span>
                   </TableCell>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">

@@ -286,9 +286,12 @@ model Property {
   propertyCode             String?               @unique
   city                     String?
   documents                Json?
+  // Legacy fields - kept for backward compatibility
   ownerName                String?
   ownerPhone               String?
-  previousTenants          Json?
+  // New seller relationship
+  sellerId                 String?
+  seller                   Seller?               @relation(fields: [sellerId], references: [id])
   rentAmount               Float?
   rentEscalationPercentage Float?                @default(0)
   securityDeposit          Float?                @default(0)
@@ -335,6 +338,28 @@ model Property {
   @@index([locationId])
   @@index([subsidiaryOptionId])
   @@index([propertySubsidiary])
+  @@index([sellerId])
+}
+
+model Seller {
+  id                String    @id @default(uuid())
+  fullName          String
+  phone             String
+  cnic              String?   // CNIC/ID
+  email             String?
+  address           String?
+  notes             String?
+  status            String    @default("Active") // Active, Inactive
+  isDeleted         Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  tid               String?   @unique
+  // Relationships
+  properties        Property[]
+  sales             Sale[]
+  @@index([status])
+  @@index([isDeleted])
+  @@index([tid])
 }
 
 model Location {
@@ -532,31 +557,45 @@ model Lease {
 
 model Sale {
   id                  String            @id @default(uuid())
+  saleId              String?           // Deal/Sale ID
   propertyId          String
-  saleValue           Float
-  commission          Float
+  sellerId            String
+  buyerId             String
+  salePrice           Float
+  advancePayment      Float             @default(0)
+  remainingAmount     Float             @default(0)
+  dealDate            DateTime          @default(now())
+  paymentStatus       String            @default("Pending") // Pending, Partial, Paid
+  saleStatus          String            @default("Pending") // Pending, In Progress, Completed, Cancelled
+  notes               String?
+  documents           Json?             // Attachments/documents
+  // Legacy fields for backward compatibility
+  saleValue           Float?
+  commission          Float?
   commissionRate      Float             @default(2.0)
   saleDate            DateTime          @default(now())
   status              String            @default("Completed")
-  notes               String?
   isDeleted           Boolean           @default(false)
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   actualPropertyValue Float?
-  buyerId             String?           @unique
   dealerId            String?
-  documents           Json?
   profit              Float?
   tid                 String?           @unique
+  // Relationships
+  property            Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  seller              Seller            @relation(fields: [sellerId], references: [id])
+  buyer               Buyer             @relation("PrimaryBuyer", fields: [buyerId], references: [id])
   buyers              Buyer[]           @relation("SaleBuyers")
   commissions         Commission[]
-  buyer               Buyer?            @relation("PrimaryBuyer", fields: [buyerId], references: [id])
   dealer              Dealer?           @relation(fields: [dealerId], references: [id])
-  property            Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   installments        SaleInstallment[]
 
   @@index([propertyId])
-  @@index([status])
+  @@index([sellerId])
+  @@index([buyerId])
+  @@index([saleStatus])
+  @@index([paymentStatus])
   @@index([isDeleted])
   @@index([dealerId])
 }
@@ -583,26 +622,41 @@ model SaleInstallment {
 }
 
 model Buyer {
-  id          String    @id @default(uuid())
-  name        String
-  email       String?
-  phone       String?
-  address     String?
-  propertyId  String?
-  saleId      String?
-  buyStatus   String    @default("Pending")
-  buyValue    Float?
-  notes       String?
-  tid         String?   @unique
-  isDeleted   Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  property    Property? @relation(fields: [propertyId], references: [id])
-  sale        Sale?     @relation("SaleBuyers", fields: [saleId], references: [id])
-  primarySale Sale?     @relation("PrimaryBuyer")
+  id                    String    @id @default(uuid())
+  fullName              String
+  phone                 String
+  cnic                  String?   // CNIC/ID
+  email                 String?
+  preferredLocation     String?
+  budgetMin             Float?
+  budgetMax             Float?
+  interestedPropertyType String?
+  requirementNotes      String?
+  status                String    @default("New") // New, Contacted, Interested, Closed, Lost
+  // Legacy fields for backward compatibility
+  name                  String?   // Keep for migration
+  address               String?
+  propertyId            String?
+  saleId                String?
+  buyStatus             String    @default("Pending") // Keep for migration
+  buyValue              Float?
+  notes                 String?
+  isDeleted             Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  tid                   String?   @unique
+  // Relationships
+  property              Property? @relation(fields: [propertyId], references: [id])
+  sale                  Sale?     @relation("SaleBuyers", fields: [saleId], references: [id])
+  primarySale           Sale?     @relation("PrimaryBuyer")
+  sales                 Sale[]    @relation("BuyerSales")
 
+  @@index([status])
+  @@index([isDeleted])
+  @@index([tid])
   @@index([propertyId])
   @@index([saleId])
+}
   @@index([buyStatus])
   @@index([isDeleted])
   @@index([tid])

@@ -105,6 +105,53 @@ type PropertyResponse = {
   }>
 }
 
+// ─── Property Image with fallback placeholder ───────────────────────────────
+function PropertyImage({
+  propertyId,
+  imageUrl,
+  name,
+}: {
+  propertyId: string
+  imageUrl?: string | null
+  name?: string | null
+}) {
+  const [failed, setFailed] = useState(false)
+  const src = imageUrl ? getPropertyImageSrc(propertyId, imageUrl) : ""
+
+  if (!imageUrl || failed) {
+    return (
+      <div className="w-full h-48 md:h-56 rounded-lg border bg-muted flex flex-col items-center justify-center gap-2 text-muted-foreground">
+        <Building2 className="h-12 w-12 opacity-40" />
+        <span className="text-sm">No Property Image</span>
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={src}
+      alt={name || "Property image"}
+      className="w-full h-48 md:h-56 object-cover rounded-lg border"
+      onError={() => setFailed(true)}
+    />
+  )
+}
+
+// ─── File type helpers ────────────────────────────────────────────────────────
+function getFileExt(fileName: string): string {
+  return fileName.split(".").pop()?.toUpperCase() || "FILE"
+}
+
+function buildAttachmentUrl(fileUrl: string, fileName: string, propertyId: string): string {
+  if (!fileUrl) return apiService.files.getViewUrl("properties", propertyId, fileName)
+  if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) return fileUrl
+  const base = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/api\/?$/, "")
+  const clean = fileUrl.replace(/^\/api/, "")
+  // Append auth token for non-image files served via secure-files
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : ""
+  return `${base}/api${clean}${token ? `?token=${encodeURIComponent(token)}` : ""}`
+}
+
 const formatArea = (sqFt?: number) => {
   if (!sqFt) return "N/A"
   if (sqFt >= 5445) {
@@ -438,16 +485,7 @@ export function PropertyDetailPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           <div className="md:col-span-4">
-            {property.imageUrl && (
-              <img
-                src={getPropertyImageSrc(propertyId, property.imageUrl)}
-                alt={property.tid || "Property image"}
-                className="w-full h-48 md:h-56 object-cover rounded-lg border"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none"
-                }}
-              />
-            )}
+            <PropertyImage propertyId={propertyId} imageUrl={property.imageUrl} name={property.name || property.tid} />
           </div>
           <div className="md:col-span-8">
             <div className="flex flex-wrap items-center gap-3">
@@ -841,141 +879,100 @@ export function PropertyDetailPage() {
                 )}
               </Button>
             </Label>
-            <FileText className="h-4 w-4 text-muted-foreground" />
           </div>
         </div>
+
         {attachments.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {attachments.map((attachment, idx) => {
-              const isImage = attachment.fileType?.startsWith('image/')
-              // Construct URL from fileUrl stored in database
-              // fileUrl format: /secure-files/properties/{entityId}/{filename}
-              let imageUrl = ''
-              if (attachment.fileUrl) {
-                // If fileUrl is already a full URL, use it
-                if (attachment.fileUrl.startsWith('http://') || attachment.fileUrl.startsWith('https://')) {
-                  imageUrl = attachment.fileUrl
-                } else {
-                  // Construct full URL from relative path
-                  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-                  const cleanPath = attachment.fileUrl.replace(/^\/api/, '')
-                  imageUrl = `${baseUrl.replace(/\/api\/?$/, '')}/api${cleanPath}`
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>File Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Uploaded</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {attachments.map((attachment, idx) => {
+                const fileUrl = buildAttachmentUrl(
+                  attachment.fileUrl,
+                  attachment.fileName,
+                  String(propertyId)
+                )
+                const isImage = attachment.fileType?.startsWith("image/")
+                const ext = getFileExt(attachment.fileName)
+                const uploadedDate = (attachment as any).createdAt
+                  ? new Date((attachment as any).createdAt).toLocaleDateString()
+                  : "—"
+
+                const handleView = () => {
+                  if (isImage) {
+                    const imageAttachments = attachments.filter((a) => a.fileType?.startsWith("image/"))
+                    const imageIndex = imageAttachments.findIndex((a) => a.id === attachment.id)
+                    setLightboxIndex(imageIndex >= 0 ? imageIndex : 0)
+                    setLightboxOpen(true)
+                  } else {
+                    setSelectedDocument({
+                      id: attachment.id,
+                      url: fileUrl,
+                      name: attachment.fileName,
+                      fileType: attachment.fileType,
+                    })
+                    setDocumentViewerOpen(true)
+                  }
                 }
-              } else if (attachment.fileName) {
-                // Fallback: use old format if fileUrl is missing
-                const trackingId = String(propertyId)
-                const entity = 'properties'
-                imageUrl = apiService.files.getViewUrl(entity, trackingId, attachment.fileName)
-              }
 
-              const handleViewDocument = () => {
-                setSelectedDocument({
-                  id: attachment.id,
-                  url: imageUrl, // Pass the full generic URL
-                  name: attachment.fileName,
-                  fileType: attachment.fileType
-                })
-                setDocumentViewerOpen(true)
-              }
+                const handleDownload = () => {
+                  const downloadUrl = buildAttachmentUrl(
+                    attachment.fileUrl,
+                    attachment.fileName,
+                    String(propertyId)
+                  ).replace(/\?token=/, "?disposition=attachment&token=")
+                  const link = document.createElement("a")
+                  link.href = downloadUrl
+                  link.download = attachment.fileName
+                  link.target = "_blank"
+                  link.rel = "noopener noreferrer"
+                  document.body.appendChild(link)
+                  link.click()
+                  document.body.removeChild(link)
+                }
 
-              const handleImageView = () => {
-                const imageAttachments = attachments.filter(a => a.fileType?.startsWith('image/'))
-                const imageIndex = imageAttachments.findIndex(a => a.id === attachment.id)
-                setLightboxIndex(imageIndex >= 0 ? imageIndex : 0)
-                setLightboxOpen(true)
-              }
-
-              return (
-                <div
-                  key={attachment.id || idx}
-                  className="relative group"
-                >
-                  {isImage ? (
-                    <div className="aspect-square rounded-lg border overflow-hidden bg-muted cursor-pointer" onClick={handleImageView}>
-                      <img
-                        src={imageUrl}
-                        alt={attachment.fileName}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        onError={(e) => {
-                          ; (e.target as HTMLImageElement).style.display = "none"
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                        <FileText className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                return (
+                  <TableRow key={attachment.id || idx}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="font-medium truncate max-w-[200px]" title={attachment.fileName}>
+                          {attachment.fileName}
+                        </span>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="aspect-square rounded-lg border bg-muted flex flex-col items-center justify-center p-2">
-                      <FileText className="h-8 w-8 text-muted-foreground mb-2" />
-                      <p className="text-xs text-center text-muted-foreground truncate w-full px-1">
-                        {attachment.fileName}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Action buttons overlay */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <div className="flex gap-2">
-                      {isImage ? (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleImageView()
-                          }}
-                          className="bg-white/90 hover:bg-white text-gray-900"
-                        >
-                          <Eye className="h-4 w-4" />
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">{ext}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{uploadedDate}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={handleView}>
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
                         </Button>
-                      ) : (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleViewDocument()
-                          }}
-                          className="bg-white/90 hover:bg-white text-gray-900"
-                        >
-                          <Eye className="h-4 w-4" />
+                        <Button variant="outline" size="sm" onClick={handleDownload}>
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
                         </Button>
-                      )}
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          // Use generic download URL
-                          const downloadUrl = apiService.files.getDownloadUrl('properties', String(propertyId), attachment.fileName)
-                          
-                          const link = document.createElement('a')
-                          link.href = downloadUrl
-                          link.download = attachment.fileName
-                          link.target = '_blank'
-                          link.rel = 'noopener noreferrer'
-                          document.body.appendChild(link)
-                          link.click()
-                          document.body.removeChild(link)
-                        }}
-                        className="bg-white/90 hover:bg-white text-gray-900"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground mt-1 truncate" title={attachment.fileName}>
-                    {attachment.fileName}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
         ) : (
           <div className="text-center py-8 border border-dashed rounded-lg">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground mb-2">No attachments yet</p>
+            <p className="text-sm text-muted-foreground mb-1">No attachments available for this property</p>
             <p className="text-xs text-muted-foreground">Click "Add Attachment" to upload documents or images</p>
           </div>
         )}
@@ -985,16 +982,16 @@ export function PropertyDetailPage() {
       {attachments.length > 0 && (
         <ImageLightbox
           images={attachments
-            .filter(a => a.fileType?.startsWith('image/'))
-            .map(a => ({
-              url: apiService.files.getViewUrl('properties', String(propertyId), a.fileName),
+            .filter((a) => a.fileType?.startsWith("image/"))
+            .map((a) => ({
+              url: buildAttachmentUrl(a.fileUrl, a.fileName, String(propertyId)),
               name: a.fileName,
             }))}
           currentIndex={lightboxIndex}
           open={lightboxOpen}
           onClose={() => setLightboxOpen(false)}
           onNavigate={(index) => {
-            const imageAttachments = attachments.filter(a => a.fileType?.startsWith('image/'))
+            const imageAttachments = attachments.filter((a) => a.fileType?.startsWith("image/"))
             if (index >= 0 && index < imageAttachments.length) {
               setLightboxIndex(index)
             }

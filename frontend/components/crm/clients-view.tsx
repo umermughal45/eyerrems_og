@@ -194,6 +194,7 @@ export function ClientsView() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Client ID</TableHead>
                 <TableHead>TID</TableHead>
                 <TableHead>Client Name</TableHead>
                 <TableHead>Type</TableHead>
@@ -213,7 +214,10 @@ export function ClientsView() {
                   onClick={() => openClientDetails(client.id)}
                 >
                   <TableCell>
-                    <span className="font-mono text-sm">{client.tid}</span>
+                    <span className="font-mono text-xs font-semibold text-primary">{client.clientCode || "—"}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-mono text-xs text-muted-foreground">{client.tid || "—"}</span>
                   </TableCell>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">

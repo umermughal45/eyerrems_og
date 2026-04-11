@@ -479,7 +479,7 @@ api.interceptors.response.use(
 export const apiService = {
   // Properties
   properties: {
-    getAll: (params?: { search?: string; locationId?: string; page?: number; limit?: number; status?: string; type?: string }, config?: any) => {
+    getAll: (params?: { search?: string; locationId?: string; page?: number; limit?: number; status?: string | string[]; type?: string | string[] }, config?: any) => {
       const queryParams = new URLSearchParams()
       // Safely handle all optional query params - only append if they have truthy values
       if (params?.search && params.search.trim()) queryParams.append('search', params.search.trim())
@@ -491,11 +491,17 @@ export const apiService = {
       if (params?.limit !== undefined && params.limit !== null && params.limit > 0) {
         queryParams.append('limit', params.limit.toString())
       }
-      if (params?.status && params.status !== 'all' && params.status.trim()) {
-        queryParams.append('status', params.status.trim())
+      if (params?.status) {
+        const statusArray = Array.isArray(params.status) ? params.status : [params.status];
+        statusArray.forEach(s => {
+          if (s && s !== 'all' && s.trim()) queryParams.append('status', s.trim());
+        });
       }
-      if (params?.type && params.type !== 'all' && params.type.trim()) {
-        queryParams.append('type', params.type.trim())
+      if (params?.type) {
+        const typeArray = Array.isArray(params.type) ? params.type : [params.type];
+        typeArray.forEach(t => {
+          if (t && t !== 'all' && t.trim()) queryParams.append('type', t.trim());
+        });
       }
       const queryString = queryParams.toString()
       return api.get(`/properties${queryString ? `?${queryString}` : ''}`, config)
@@ -544,6 +550,7 @@ export const apiService = {
     delete: (id: string) => api.delete(`/units/${id}`),
     getFloorAnalytics: (propertyId: string) => api.get(`/units/analytics/floors/${propertyId}`),
     createForFloor: (floorId: string, data: any) => api.post(`/units/floors/${floorId}/units`, data),
+    getPropertyStats: (propertyId: string) => api.get(`/units/stats/property/${propertyId}`),
   },
 
   // Tenants
@@ -634,13 +641,22 @@ export const apiService = {
     deleteInstallment: (id: string) => api.delete(`/sales/installments/${id}`),
   },
 
+  // Sellers
+  sellers: {
+    getAll: () => api.get('/sellers'),
+    getById: (id: string) => api.get(`/sellers/${id}`),
+    create: (data: any) => api.post('/sellers', data),
+    update: (id: string, data: any) => api.put(`/sellers/${id}`, data),
+    delete: (id: string) => api.delete(`/sellers/${id}`),
+  },
+
   // Buyers
   buyers: {
     getAll: () => api.get('/buyers'),
-    getById: (id: number) => api.get(`/buyers/${id}`),
+    getById: (id: string) => api.get(`/buyers/${id}`),
     create: (data: any) => api.post('/buyers', data),
-    update: (id: number, data: any) => api.put(`/buyers/${id}`, data),
-    delete: (id: number) => api.delete(`/buyers/${id}`),
+    update: (id: string, data: any) => api.put(`/buyers/${id}`, data),
+    delete: (id: string) => api.delete(`/buyers/${id}`),
   },
 
   // Leases
@@ -772,6 +788,14 @@ export const apiService = {
     createPayment: (dealId: string, data: any) => api.post(`/crm/deals/${dealId}/payments`, data),
     smartAllocatePayment: (dealId: string, data: { amount: number; method: string }) =>
       api.patch(`/crm/deals/${dealId}/payments/smart-allocate`, data),
+  },
+
+  // CRM Transactions (TID-based lookup)
+  transactionsCrm: {
+    searchByTID: (tid: string) => api.get(`/transactions-crm/search?tid=${encodeURIComponent(tid)}`),
+    getByTID: (tid: string) => api.get(`/transactions-crm/${encodeURIComponent(tid)}`),
+    generateTID: () => api.get('/transactions-crm/generate/tid'),
+    getClientTID: (clientId: string) => api.get(`/transactions-crm/client/${encodeURIComponent(clientId)}/tid`),
   },
 
   // CRM - Dealers

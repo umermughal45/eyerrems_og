@@ -62,6 +62,7 @@ export default function PropertyStructurePage() {
 
   const [property, setProperty] = useState<any>(null)
   const [floors, setFloors] = useState<Floor[]>([])
+  const [summary, setSummary] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [expandedFloors, setExpandedFloors] = useState<Set<string>>(new Set())
   
@@ -80,7 +81,7 @@ export default function PropertyStructurePage() {
   const [unitForm, setUnitForm] = useState({
     unitName: "",
     unitType: "",
-    status: "Vacant",
+    status: "VACANT",
     monthlyRent: "",
   })
 
@@ -99,6 +100,7 @@ export default function PropertyStructurePage() {
       if (data) {
         setProperty(data.property)
         setFloors(data.floors || [])
+        setSummary(data.summary || null)
         // Auto-expand all floors initially
         setExpandedFloors(new Set(data.floors?.map((f: Floor) => f.id) || []))
       }
@@ -348,6 +350,48 @@ export default function PropertyStructurePage() {
           </Button>
         </div>
 
+        {/* Property Stats */}
+        {summary && (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <Card className="p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">{summary.totalFloors}</div>
+                <div className="text-sm text-muted-foreground">Total Floors</div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">{summary.totalUnits}</div>
+                <div className="text-sm text-muted-foreground">Total Units</div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{summary.occupiedUnits}</div>
+                <div className="text-sm text-muted-foreground">Occupied</div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{summary.vacantUnits}</div>
+                <div className="text-sm text-muted-foreground">Vacant</div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">{summary.underMaintenanceUnits || 0}</div>
+                <div className="text-sm text-muted-foreground">Maintenance</div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">{summary.reservedUnits || 0}</div>
+                <div className="text-sm text-muted-foreground">Reserved</div>
+              </div>
+            </Card>
+          </div>
+        )}
+
         {/* Floors List */}
         {floors.length === 0 ? (
           <Card className="p-12 text-center">
@@ -454,10 +498,10 @@ export default function PropertyStructurePage() {
                                 </div>
                                 <Badge
                                   variant={
-                                    unit.status === "Occupied" ? "default" : "secondary"
+                                    unit.status === "OCCUPIED" ? "default" : "secondary"
                                   }
                                 >
-                                  {unit.status}
+                                  {unit.status.replace(/_/g, ' ')}
                                 </Badge>
                               </div>
                               {unit.monthlyRent && (
@@ -606,9 +650,11 @@ export default function PropertyStructurePage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Vacant">Vacant</SelectItem>
-                    <SelectItem value="Occupied">Occupied</SelectItem>
-                    <SelectItem value="Under Maintenance">Under Maintenance</SelectItem>
+                    <SelectItem value="VACANT">Vacant</SelectItem>
+                    <SelectItem value="OCCUPIED">Occupied</SelectItem>
+                    <SelectItem value="UNDER_MAINTENANCE">Under Maintenance</SelectItem>
+                    <SelectItem value="RESERVED">Reserved</SelectItem>
+                    <SelectItem value="INACTIVE">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

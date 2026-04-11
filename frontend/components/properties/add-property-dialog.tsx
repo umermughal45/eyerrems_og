@@ -614,6 +614,28 @@ export function AddPropertyDialog({ open, onOpenChange, propertyId, onSuccess }:
                         />
                       </div>
 
+                      {/* For Sale toggle */}
+                      <div className="flex items-center gap-3 rounded-lg border p-3 bg-muted/30">
+                        <input
+                          id="forSaleToggle"
+                          type="checkbox"
+                          className="h-4 w-4 cursor-pointer accent-blue-600"
+                          checked={form.status === "For Sale"}
+                          onChange={(e) =>
+                            setForm((p) => ({
+                              ...p,
+                              status: e.target.checked ? "For Sale" : "Active",
+                            }))
+                          }
+                        />
+                        <label htmlFor="forSaleToggle" className="text-sm font-medium cursor-pointer select-none">
+                          Property For Sale
+                        </label>
+                        <span className="text-xs text-muted-foreground ml-1">
+                          (sets status to "For Sale" and enables sale price)
+                        </span>
+                      </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Sale Price</Label>

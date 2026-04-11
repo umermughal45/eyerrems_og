@@ -34,7 +34,7 @@ export function PropertiesDetailsView({ initialData }: { initialData?: any }) {
       propertiesChange: "+0 this month",
       occupancyChange: "+0% from last month",
     }
-    const properties = Array.isArray(initialData) ? initialData : (initialData.properties || [])
+    const properties = initialData.properties || []
     const statsData = initialData.statsData || {}
     const uniqueLocations = new Set(
       properties
@@ -51,18 +51,18 @@ export function PropertiesDetailsView({ initialData }: { initialData?: any }) {
     }
   })
   const [propertyTypeData, setPropertyTypeData] = useState<any[]>(() => {
-    if (!initialData || Array.isArray(initialData)) return []
+    if (!initialData) return []
     return initialData.statsData?.propertyTypeData || []
   })
   const [propertyStatusData, setPropertyStatusData] = useState<any[]>(() => {
-    if (!initialData || Array.isArray(initialData)) return []
+    if (!initialData) return []
     return initialData.statsData?.propertyStatusData || []
   })
   const [occupancyTrend, setOccupancyTrend] = useState<any[]>([])
   const [revenueTrend, setRevenueTrend] = useState<any[]>([])
   const [propertiesList, setPropertiesList] = useState<any[]>(() => {
     if (!initialData) return []
-    return Array.isArray(initialData) ? initialData : (initialData.properties || [])
+    return initialData.properties || []
   })
   const [loading, setLoading] = useState(!initialData)
   const [searchTerm, setSearchTerm] = useState("")
@@ -103,24 +103,23 @@ export function PropertiesDetailsView({ initialData }: { initialData?: any }) {
         occupancyChange: statsData.occupancyChange || "+0% from last month",
       })
 
-      // Generate trend data from properties list
-      const now = new Date();
-      const last6Months = Array.from({ length: 6 }).map((_, i) => {
-        const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
-        return { name: d.toLocaleString('default', { month: 'short' }), Count: 0, Revenue: 0 };
-      });
-      
+      // Use real propertiesAddedTrend from backend stats
+      const addedTrend: any[] = statsData.propertiesAddedTrend || []
+      const trendData = addedTrend.map((t: any) => ({
+        name: t.month,
+        Count: t.amount || 0,
+        Revenue: 0,
+      }))
+      // Populate Revenue from per-property rentRevenue if available
       properties.forEach((p: any) => {
-        const pDate = new Date(p.createdAt || new Date());
-        const mNode = last6Months.find(m => m.name === pDate.toLocaleString('default', { month: 'short' }));
-        if(mNode) {
-           mNode.Count += p.units?.length || 1;
-           mNode.Revenue += (p.averageRent || p.rentRevenue || 5000);
-        }
-      });
-      
-      setOccupancyTrend(last6Months);
-      setRevenueTrend(last6Months);
+        const pDate = new Date(p.createdAt || new Date())
+        const monthName = pDate.toLocaleString('default', { month: 'short' })
+        const node = trendData.find((m: any) => m.name === monthName)
+        if (node) node.Revenue += (p.rentRevenue || 0)
+      })
+
+      setOccupancyTrend(trendData)
+      setRevenueTrend(trendData)
       setPropertiesList(properties)
     } catch (err) {
       console.error("Failed to fetch properties data:", err)
@@ -133,24 +132,23 @@ export function PropertiesDetailsView({ initialData }: { initialData?: any }) {
     if (!initialData || debouncedSearchTerm) {
       fetchData()
     } else if (initialData && !occupancyTrend.length) {
-      // Calculate trends from initial data
-      const properties = Array.isArray(initialData) ? initialData : (initialData.properties || [])
-      const now = new Date();
-      const last6Months = Array.from({ length: 6 }).map((_, i) => {
-        const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
-        return { name: d.toLocaleString('default', { month: 'short' }), Count: 0, Revenue: 0 };
-      });
-      
+      // Use real propertiesAddedTrend from initialData statsData
+      const statsData = initialData.statsData || {}
+      const properties = initialData.properties || []
+      const addedTrend: any[] = statsData.propertiesAddedTrend || []
+      const trendData = addedTrend.map((t: any) => ({
+        name: t.month,
+        Count: t.amount || 0,
+        Revenue: 0,
+      }))
       properties.forEach((p: any) => {
-        const pDate = new Date(p.createdAt || new Date());
-        const mNode = last6Months.find(m => m.name === pDate.toLocaleString('default', { month: 'short' }));
-        if(mNode) {
-           mNode.Count += p.units?.length || 1;
-           mNode.Revenue += (p.averageRent || p.rentRevenue || 5000);
-        }
-      });
-      setOccupancyTrend(last6Months);
-      setRevenueTrend(last6Months);
+        const pDate = new Date(p.createdAt || new Date())
+        const monthName = pDate.toLocaleString('default', { month: 'short' })
+        const node = trendData.find((m: any) => m.name === monthName)
+        if (node) node.Revenue += (p.rentRevenue || 0)
+      })
+      setOccupancyTrend(trendData)
+      setRevenueTrend(trendData)
     }
   }, [fetchData, initialData, debouncedSearchTerm, occupancyTrend.length])
 
@@ -249,8 +247,8 @@ export function PropertiesDetailsView({ initialData }: { initialData?: any }) {
               loading={loading}
             />
             <MiniChartCard
-              title="Est. Revenue Trend"
-              valuePrefix="$"
+              title="Monthly Revenue Trend"
+              valuePrefix="Rs "
               value={revenueTrend[revenueTrend.length - 1]?.Revenue.toLocaleString() || "0"}
               data={revenueTrend}
               dataKey="Revenue"

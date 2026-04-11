@@ -5,12 +5,13 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Search, Home, Building2, DollarSign, Loader2 } from "lucide-react"
+import { ArrowLeft, Search, Home, Building2, TrendingUp, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { apiService } from "@/lib/api"
 import { EditStatusDialog } from "@/components/properties/edit-status-dialog"
+import { formatCurrency } from "@/lib/utils"
 
 export default function UnitsDetailsPage() {
   const router = useRouter()
@@ -21,6 +22,8 @@ export default function UnitsDetailsPage() {
   const [stats, setStats] = useState({
     totalUnits: 0,
     occupied: 0,
+    vacant: 0,
+    occupancyRate: 0,
     revenue: 0,
   })
 
@@ -33,24 +36,20 @@ export default function UnitsDetailsPage() {
       setLoading(true)
       const response: any = await apiService.units.getAll()
       const unitsData = response?.data?.data || response?.data || []
-      // Filter out units from houses (houses don't have units)
       const nonHouseUnits = Array.isArray(unitsData)
         ? unitsData.filter((u: any) => u.property?.type !== 'house')
         : []
       setUnits(nonHouseUnits)
 
-      // Calculate stats - only for non-house units
-      const total = nonHouseUnits.length || 0
-      const occupied = nonHouseUnits.filter((u: any) => u.status === "Occupied").length || 0
+      const total = nonHouseUnits.length
+      const occupied = nonHouseUnits.filter((u: any) => u.status === "Occupied").length
+      const vacant = nonHouseUnits.filter((u: any) => u.status === "Vacant").length
+      const occupancyRate = total > 0 ? (occupied / total) * 100 : 0
       const revenue = nonHouseUnits
         .filter((u: any) => u.status === "Occupied")
         .reduce((sum: number, u: any) => sum + (parseFloat(u.monthlyRent) || 0), 0)
 
-      setStats({
-        totalUnits: total,
-        occupied: occupied,
-        revenue: revenue,
-      })
+      setStats({ totalUnits: total, occupied, vacant, occupancyRate, revenue })
     } catch (err: any) {
       console.error("Failed to fetch units:", err)
       setUnits([])
@@ -81,10 +80,10 @@ export default function UnitsDetailsPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <Card className="p-6 relative overflow-hidden bg-white dark:bg-[#0d212c] rounded-xl border-l-4 border-l-[#24344c] dark:border-l-[#0d212c] shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)]">
             <div className="flex items-center gap-3 mb-2">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#3b82f6,#1d4ed8)] text-white shadow-lg transition-transform duration-300 hover:scale-110">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#3b82f6,#1d4ed8)] text-white shadow-lg">
                 <Home className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -96,7 +95,7 @@ export default function UnitsDetailsPage() {
 
           <Card className="p-6 relative overflow-hidden bg-white dark:bg-[#0d212c] rounded-xl border-l-4 border-l-[#24344c] dark:border-l-[#0d212c] shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)]">
             <div className="flex items-center gap-3 mb-2">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#22c55e,#15803d)] text-white shadow-lg transition-transform duration-300 hover:scale-110">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#22c55e,#15803d)] text-white shadow-lg">
                 <Building2 className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -108,12 +107,36 @@ export default function UnitsDetailsPage() {
 
           <Card className="p-6 relative overflow-hidden bg-white dark:bg-[#0d212c] rounded-xl border-l-4 border-l-[#24344c] dark:border-l-[#0d212c] shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)]">
             <div className="flex items-center gap-3 mb-2">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#f59e0b,#b45309)] text-white shadow-lg transition-transform duration-300 hover:scale-110">
-                <DollarSign className="h-6 w-6 text-white" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#f59e0b,#b45309)] text-white shadow-lg">
+                <Home className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Vacant</p>
+                <p className="text-2xl font-bold">{stats.vacant}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 relative overflow-hidden bg-white dark:bg-[#0d212c] rounded-xl border-l-4 border-l-[#24344c] dark:border-l-[#0d212c] shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-white shadow-lg">
+                <TrendingUp className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Occupancy Rate</p>
+                <p className="text-2xl font-bold">{stats.occupancyRate.toFixed(1)}%</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 relative overflow-hidden bg-white dark:bg-[#0d212c] rounded-xl border-l-4 border-l-[#24344c] dark:border-l-[#0d212c] shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#10b981,#047857)] text-white shadow-lg">
+                <TrendingUp className="h-6 w-6 text-white" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Monthly Revenue</p>
-                <p className="text-2xl font-bold">Rs {stats.revenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold">{formatCurrency(stats.revenue)}</p>
               </div>
             </div>
           </Card>
@@ -163,15 +186,15 @@ export default function UnitsDetailsPage() {
                     <TableCell>{unit.block?.name || "N/A"}</TableCell>
                     <TableCell>{unit.unitName || "N/A"}</TableCell>
                     <TableCell>
-                      <Badge 
+                      <Badge
                         variant={unit.status === "Occupied" ? "default" : "secondary"}
                         className="cursor-pointer hover:opacity-80 transition-opacity"
                         onClick={(e) => {
                           e.stopPropagation()
-                          setEditingStatusUnit({ 
-                            id: unit.id, 
-                            status: unit.status || "Vacant", 
-                            name: unit.unitName || "Unit" 
+                          setEditingStatusUnit({
+                            id: unit.id,
+                            status: unit.status || "Vacant",
+                            name: unit.unitName || "Unit"
                           })
                         }}
                       >
@@ -180,7 +203,7 @@ export default function UnitsDetailsPage() {
                     </TableCell>
                     <TableCell>{unit.tenantName || "N/A"}</TableCell>
                     <TableCell className="text-right font-semibold">
-                      Rs {parseFloat(unit.monthlyRent || 0).toLocaleString()}
+                      {formatCurrency(parseFloat(unit.monthlyRent || 0))}
                     </TableCell>
                   </TableRow>
                 ))

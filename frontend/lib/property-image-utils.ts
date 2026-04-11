@@ -64,9 +64,9 @@ export function getPropertyImageSrc(propertyId: string | number, imageUrl?: stri
   }
 
   // Handle secure-files paths: /secure-files/properties/{entityId}/{filename}
+  // Images are served without auth by the secure-files route
   if (imageUrl.startsWith('/secure-files/')) {
     const baseUrl = API_BASE_URL.replace(/\/api\/?$/, '')
-    // Remove /api prefix if present, then add it back
     const cleanPath = imageUrl.replace(/^\/api/, '')
     return `${baseUrl}/api${cleanPath}`
   }

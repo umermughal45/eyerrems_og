@@ -110,7 +110,7 @@ router.post('/convert-from-client/:clientId', authenticate, async (req: AuthRequ
     // Update unit status
     await prisma.unit.update({
       where: { id: unitId },
-      data: { status: 'Occupied' },
+      data: { status: 'OCCUPIED' },
     });
 
     // Update property status
@@ -335,7 +335,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     }
 
     // Additional check: Verify unit status
-    if (unit.status === 'Occupied') {
+    if (unit.status === 'OCCUPIED') {
       return errorResponse(res, 'Unit status indicates it is already occupied. Please verify the unit status before assigning a tenant.', 400);
     }
 
@@ -364,14 +364,14 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     // Auto-sync: Update unit status to Occupied
     await prisma.unit.update({
       where: { id: data.unitId },
-      data: { status: 'Occupied' },
+      data: { status: 'OCCUPIED' },
     });
 
     // Auto-sync: Update property status to Occupied if needed
     const property = await prisma.property.findUnique({
       where: { id: tenant.unit.property.id },
       include: {
-        units: { where: { isDeleted: false, status: 'Occupied' } },
+        units: { where: { isDeleted: false, status: 'OCCUPIED' } },
       },
     });
 
@@ -472,14 +472,14 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res: Response) => {
     // Update unit status to Vacant
     await prisma.unit.update({
       where: { id: tenant.unitId },
-      data: { status: 'Vacant' },
+      data: { status: 'VACANT' },
     });
 
     // Check if property should be marked as Vacant
     const property = await prisma.property.findUnique({
       where: { id: tenant.unit.propertyId },
       include: {
-        units: { where: { isDeleted: false, status: 'Occupied' } },
+        units: { where: { isDeleted: false, status: 'OCCUPIED' } },
         tenancies: { where: { status: 'active' } },
       },
     });

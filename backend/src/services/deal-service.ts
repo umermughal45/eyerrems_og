@@ -760,7 +760,7 @@ export class DealService {
       if (deal.unitId) {
         await prismaClient.unit.update({
           where: { id: deal.unitId },
-          data: { status: 'Sold' },
+          data: { status: 'INACTIVE' },
         });
       }
 

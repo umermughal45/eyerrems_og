@@ -33,16 +33,18 @@ export function DocumentViewer({ open, onClose, document: doc }: DocumentViewerP
   if (!doc) return null
 
   const getDocumentUrl = (url: string) => {
-    // If it's already a full URL, return it
+    // If it's already a full URL (including token-bearing URLs), return it as-is
     if (url.startsWith("http://") || url.startsWith("https://")) return url;
-    
+
     // Handle secure-files paths: /secure-files/... or /api/secure-files/...
     if (url.startsWith("/secure-files/") || url.startsWith("/api/secure-files/")) {
       const baseUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/api\/?$/, "")
       const cleanPath = url.replace(/^\/api/, '')
-      return `${baseUrl}/api${cleanPath}`
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : ""
+      const sep = cleanPath.includes("?") ? "&" : "?"
+      return `${baseUrl}/api${cleanPath}${token ? `${sep}token=${encodeURIComponent(token)}` : ""}`
     }
-    
+
     // Handle /api/files paths
     if (url.startsWith("/api/files")) {
       const baseUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/api\/?$/, "")
@@ -58,12 +60,7 @@ export function DocumentViewer({ open, onClose, document: doc }: DocumentViewerP
   const isPDF = doc.fileType === 'application/pdf' || doc.name.toLowerCase().endsWith('.pdf')
 
   const handleDownload = () => {
-    // Check if we can construct a download URL from the view URL
-    let downloadUrl = getDocumentUrl(doc.url)
-    if (downloadUrl.includes('/view/')) {
-        downloadUrl = downloadUrl.replace('/view/', '/download/')
-    }
-    
+    const downloadUrl = getDocumentUrl(doc.url)
     const link = document.createElement('a')
     link.href = downloadUrl
     link.download = doc.name

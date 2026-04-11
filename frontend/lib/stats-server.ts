@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 // Helper function to format time ago
 function getTimeAgo(date: Date): string {
@@ -103,20 +103,23 @@ export async function getPropertiesDetailsServer(searchTerm?: string) {
       token = cookieStore.get('token')?.value;
     } catch (e) {}
   }
-  const endpoint = searchTerm
+  const headers = { Authorization: token ? `Bearer ${token}` : '' };
+  const propertiesEndpoint = searchTerm
     ? `/properties?search=${searchTerm}`
     : '/properties';
-  
+
   try {
-    const response = await axios.get(`${API_BASE_URL}${endpoint}`, {
-      headers: {
-        Authorization: token ? `Bearer ${token}` : '',
-      },
-    });
-    return response.data.data;
+    const [propertiesRes, statsRes] = await Promise.all([
+      axios.get(`${API_BASE_URL}${propertiesEndpoint}`, { headers }),
+      axios.get(`${API_BASE_URL}/stats/properties`, { headers }),
+    ]);
+    return {
+      properties: propertiesRes.data.data || [],
+      statsData: statsRes.data.data || {},
+    };
   } catch (error) {
-    console.error(`[stats-server] Error fetching ${endpoint}:`, error instanceof Error ? error.message : String(error));
-    return [];
+    console.error(`[stats-server] Error fetching properties details:`, error instanceof Error ? error.message : String(error));
+    return { properties: [], statsData: {} };
   }
 }
 

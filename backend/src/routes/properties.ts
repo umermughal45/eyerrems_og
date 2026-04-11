@@ -107,13 +107,13 @@ router.get('/', authenticate, validateQuery(propertyQuerySchema), async (req: Au
     };
 
     if (status) {
-      const statusStr = Array.isArray(status) ? status[0] : status;
-      where.status = String(statusStr) as 'Active' | 'Maintenance' | 'Vacant' | 'For Sale' | 'For Rent' | 'Sold' | 'Occupied';
+      const statusArray = Array.isArray(status) ? status : [status];
+      where.status = { in: statusArray.map(s => String(s) as 'Active' | 'Maintenance' | 'Vacant' | 'For Sale' | 'For Rent' | 'Sold' | 'Occupied') };
     }
 
     if (type) {
-      const typeStr = Array.isArray(type) ? type[0] : type;
-      where.type = String(typeStr);
+      const typeArray = Array.isArray(type) ? type : [type];
+      where.type = { in: typeArray.map(t => String(t)) };
     }
 
     if (locationQuery) {
@@ -345,7 +345,7 @@ router.get('/', authenticate, validateQuery(propertyQuerySchema), async (req: Au
         by: ['propertyId'],
         where: {
           propertyId: { in: propertyIds },
-          status: 'Occupied',
+          status: 'OCCUPIED',
           isDeleted: false,
         },
         _count: true,
@@ -355,7 +355,7 @@ router.get('/', authenticate, validateQuery(propertyQuerySchema), async (req: Au
         by: ['propertyId'],
         where: {
           propertyId: { in: propertyIds },
-          status: 'Occupied',
+          status: 'OCCUPIED',
           isDeleted: false,
         },
         _sum: { monthlyRent: true },
@@ -650,12 +650,27 @@ router.get('/:id/structure', authenticate, async (req: AuthRequest, res: Respons
         totalUnits: floors.reduce((sum, floor) => sum + floor._count.units, 0),
         occupiedUnits: floors.reduce(
           (sum, floor) =>
-            sum + floor.units.filter((u) => u.status === 'Occupied').length,
+            sum + floor.units.filter((u) => u.status === 'OCCUPIED').length,
           0
         ),
         vacantUnits: floors.reduce(
           (sum, floor) =>
-            sum + floor.units.filter((u) => u.status === 'Vacant').length,
+            sum + floor.units.filter((u) => u.status === 'VACANT').length,
+          0
+        ),
+        underMaintenanceUnits: floors.reduce(
+          (sum, floor) =>
+            sum + floor.units.filter((u) => u.status === 'UNDER_MAINTENANCE').length,
+          0
+        ),
+        reservedUnits: floors.reduce(
+          (sum, floor) =>
+            sum + floor.units.filter((u) => u.status === 'RESERVED').length,
+          0
+        ),
+        inactiveUnits: floors.reduce(
+          (sum, floor) =>
+            sum + floor.units.filter((u) => u.status === 'INACTIVE').length,
           0
         ),
       },
@@ -1159,7 +1174,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
     const occupiedUnits = await prisma.unit.count({
       where: {
         propertyId: property.id,
-        status: 'Occupied',
+        status: 'OCCUPIED',
         isDeleted: false,
       },
     });
@@ -1177,7 +1192,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
     const monthlyRevenue = await prisma.unit.aggregate({
       where: {
         propertyId: property.id,
-        status: 'Occupied',
+        status: 'OCCUPIED',
         isDeleted: false,
       },
       _sum: {
@@ -2199,7 +2214,7 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res: Response) => {
         },
         data: {
           isDeleted: true,
-          status: 'Vacant', // Also set status to Vacant
+          status: 'VACANT', // Also set status to Vacant
         },
       });
 

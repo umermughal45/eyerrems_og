@@ -251,7 +251,7 @@ router.put(
       });
 
       // Recalculate occupancy and revenue if units/tenancies changed
-      const occupiedUnits = property.units.filter(u => u.status === 'Occupied').length;
+      const occupiedUnits = property.units.filter(u => u.status === 'OCCUPIED').length;
       const totalUnits = property.totalUnits || property.units.length;
       
       // Update property status based on occupancy
@@ -323,7 +323,7 @@ router.delete(
           },
           data: { 
             isDeleted: true,
-            status: 'Vacant',
+            status: 'VACANT',
           },
         });
 
@@ -635,7 +635,7 @@ router.put(
         const property = await prisma.property.findUnique({
           where: { id: req.params.id },
           include: {
-            units: { where: { isDeleted: false, status: 'Occupied' } },
+            units: { where: { isDeleted: false, status: 'OCCUPIED' } },
             tenancies: { where: { status: 'active' } },
           },
         });

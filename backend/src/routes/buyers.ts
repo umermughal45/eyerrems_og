@@ -8,15 +8,23 @@ const router = (express as any).Router();
 
 // Validation schemas
 const createBuyerSchema = z.object({
-  name: z.string().min(1, 'Buyer name is required'),
+  fullName: z.string().min(1, 'Full name is required'),
+  phone: z.string().min(1, 'Phone is required'),
+  cnic: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
-  phone: z.string().optional(),
+  preferredLocation: z.string().optional(),
+  budgetMin: z.number().positive().optional(),
+  budgetMax: z.number().positive().optional(),
+  interestedPropertyType: z.string().optional(),
+  requirementNotes: z.string().optional(),
+  status: z.enum(['New', 'Contacted', 'Interested', 'Closed', 'Lost']).optional(),
+  // Legacy fields for backward compatibility
+  name: z.string().optional(), // Will be mapped to fullName
   address: z.string().optional(),
   propertyId: z.string().uuid().optional(),
   saleId: z.string().uuid().optional(),
   buyStatus: z.enum(['Pending', 'Completed', 'Cancelled']).optional(),
   buyValue: z.number().positive().optional(),
-
   notes: z.string().optional(),
   tid: z.string().min(1, 'TID is required'),
 });
@@ -169,10 +177,16 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
 
     const buyer = await prisma.buyer.create({
       data: {
-
-        ...data,
-        email: data.email || undefined,
+        name: data.fullName || data.name || '',
+        phone: data.phone,
+        email: data.email || null,
+        address: data.address || null,
+        propertyId: data.propertyId || null,
+        saleId: data.saleId || null,
         buyStatus: data.buyStatus || 'Pending',
+        buyValue: data.buyValue || null,
+        notes: data.notes || data.requirementNotes || null,
+        tid: data.tid,
       },
       include: {
         property: true,

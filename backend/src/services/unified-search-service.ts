@@ -4,65 +4,164 @@ export interface UnifiedSearchResult {
   tid: string;
   lead?: any;
   client?: any;
+  deals: any[];
   properties: any[];
   dealers: any[];
-  deals: any[];
+  paymentPlans: any[];
+  installments: any[];
   payments: any[];
-  ledgerEntries: any[];
+  activities: any[];
 }
 
 export class UnifiedSearchService {
   /**
-   * Deep search across the entire business lifecycle using a TID
+   * Deep search across the entire business lifecycle using a TID.
+   * Searches Lead, Client, Deal (and their nested PaymentPlan, Installments, Payments).
+   * Also supports searching by leadCode (LD-0001) or clientCode (CLI-0001 / LD-CLI-0001).
    */
   static async searchByTID(tid: string): Promise<UnifiedSearchResult | null> {
     if (!tid) return null;
 
-    const [lead, client, properties, dealers, deals, payments, ledgerEntries] = await Promise.all([
-      prisma.lead.findFirst({ 
-        where: { tid, isDeleted: false },
-        include: { assignedAgent: { select: { username: true, email: true } } }
+    const normalizedTid = tid.trim().toUpperCase();
+
+    // Detect if the query is a lead code (LD-####) or client code (CLI-#### / LD-CLI-####)
+    const isLeadCode = /^LD-\d{4}$/.test(normalizedTid);
+    const isClientCode = /^(CLI-\d{4}|LD-CLI-\d{4})$/.test(normalizedTid);
+
+    let resolvedTid = normalizedTid;
+
+    if (isLeadCode) {
+      // Resolve lead code → TID
+      const leadByCode = await prisma.lead.findFirst({
+        where: { leadCode: normalizedTid, isDeleted: false },
+        select: { tid: true },
+      });
+      if (leadByCode?.tid) resolvedTid = leadByCode.tid;
+      else return null;
+    } else if (isClientCode) {
+      // Resolve client code → TID
+      const clientByCode = await prisma.client.findFirst({
+        where: { clientCode: normalizedTid, isDeleted: false },
+        select: { tid: true },
+      });
+      if (clientByCode?.tid) resolvedTid = clientByCode.tid;
+      else return null;
+    }
+
+    const [lead, client, deals] = await Promise.all([
+      prisma.lead.findFirst({
+        where: { tid: resolvedTid, isDeleted: false },
+        include: { assignedAgent: { select: { username: true, email: true } } },
       }),
-      prisma.client.findFirst({ 
-        where: { tid, isDeleted: false },
-        include: { deals: true }
+      prisma.client.findFirst({
+        where: { tid: resolvedTid, isDeleted: false },
       }),
-      prisma.property.findMany({
-        where: { tid, isDeleted: false },
-      }),
-      prisma.dealer.findMany({
-        where: { tid, isDeleted: false },
-      }),
-      prisma.deal.findMany({ 
-        where: { tid, isDeleted: false },
-        include: { property: true, dealer: true }
-      }),
-      prisma.payment.findMany({ 
-        where: { deal: { tid }, deletedAt: null },
-        include: { deal: true }
-      }),
-      prisma.ledgerEntry.findMany({ 
-        where: { remarks: { contains: `[TID:${tid}]` }, deletedAt: null },
-        orderBy: { date: 'desc' }
+      prisma.deal.findMany({
+        where: { tid: resolvedTid, isDeleted: false },
+        include: {
+          property: {
+            select: {
+              id: true, name: true, address: true, type: true,
+              status: true, totalArea: true, salePrice: true,
+            },
+          },
+          dealer: {
+            select: { id: true, name: true, phone: true, email: true, commissionRate: true },
+          },
+          paymentPlan: {
+            include: {
+              installments: {
+                orderBy: { installmentNumber: 'asc' },
+              },
+            },
+          },
+          payments: {
+            where: { deletedAt: null },
+            orderBy: { date: 'desc' },
+          },
+        },
       }),
     ]);
 
-    // If nothing found at all, return null
-    if (!lead && !client && properties.length === 0 && dealers.length === 0 && deals.length === 0 && ledgerEntries.length === 0) {
-      // One last check: maybe the TID is partial? 
-      // But for ERP-style search, exact TID is usually preferred.
+    // Also search by client TID to find deals linked to that client
+    let clientDeals = deals;
+    if (client && deals.length === 0) {
+      clientDeals = await prisma.deal.findMany({
+        where: { clientId: client.id, isDeleted: false },
+        include: {
+          property: {
+            select: {
+              id: true, name: true, address: true, type: true,
+              status: true, totalArea: true, salePrice: true,
+            },
+          },
+          dealer: {
+            select: { id: true, name: true, phone: true, email: true, commissionRate: true },
+          },
+          paymentPlan: {
+            include: {
+              installments: {
+                orderBy: { installmentNumber: 'asc' },
+              },
+            },
+          },
+          payments: {
+            where: { deletedAt: null },
+            orderBy: { date: 'desc' },
+          },
+        },
+      });
+    }
+
+    if (!lead && !client && clientDeals.length === 0) {
       return null;
     }
 
+    // Flatten payment plans and installments
+    const paymentPlans = clientDeals
+      .map((d: any) => d.paymentPlan)
+      .filter(Boolean)
+      .map((pp: any) => ({ ...pp, installments: undefined }));
+
+    const installments = clientDeals
+      .flatMap((d: any) => d.paymentPlan?.installments || []);
+
+    const payments = clientDeals.flatMap((d: any) => d.payments || []);
+
+    // CRM activities
+    const activities = await prisma.cRMActivity.findMany({
+      where: {
+        OR: [
+          ...(lead ? [{ leadId: lead.id }] : []),
+          ...(client ? [{ clientId: client.id }] : []),
+          ...(clientDeals.length > 0 ? [{ dealId: { in: clientDeals.map((d: any) => d.id) } }] : []),
+        ],
+      },
+      orderBy: { activityDate: 'desc' },
+      take: 20,
+    });
+
+    const properties = clientDeals
+      .map((d: any) => d.property)
+      .filter(Boolean)
+      .filter((p: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.id === p.id) === i);
+
+    const dealers = clientDeals
+      .map((d: any) => d.dealer)
+      .filter(Boolean)
+      .filter((d: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.id === d.id) === i);
+
     return {
-      tid,
-      lead,
-      client,
+      tid: resolvedTid,
+      lead: lead || undefined,
+      client: client || undefined,
+      deals: clientDeals.map((d: any) => ({ ...d, paymentPlan: undefined, payments: undefined })),
       properties,
       dealers,
-      deals,
+      paymentPlans,
+      installments,
       payments,
-      ledgerEntries,
+      activities,
     };
   }
 
@@ -70,10 +169,8 @@ export class UnifiedSearchService {
    * Get unified ledger for an entity (CLIENT, PROPERTY, or DEALER)
    */
   static async getLedger(type: 'CLIENT' | 'PROPERTY' | 'DEALER', id: string) {
-    // This will fetch all ledger entries related to this entity's TID(s)
-    // For simplicity, we find the entity first to get its TID
     let tid: string | null = null;
-    
+
     if (type === 'CLIENT') {
       const client = await prisma.client.findUnique({ where: { id }, select: { tid: true } });
       tid = client?.tid || null;
@@ -97,9 +194,8 @@ export class UnifiedSearchService {
       where: {
         dealId: { in: deals.map((d) => d.id) },
         deletedAt: null,
-        remarks: { contains: `[LEDGER:${type}]` },
       },
-      orderBy: { date: 'desc' }
+      orderBy: { date: 'desc' },
     });
   }
 }

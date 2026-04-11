@@ -14,7 +14,7 @@ const createUnitSchema = z.object({
   propertyId: z.string().uuid('Invalid property ID'),
   blockId: z.string().uuid().optional(),
   floorId: z.string().uuid().optional(),
-  status: z.enum(['Occupied', 'Vacant', 'Under Maintenance']).optional(),
+  status: z.enum(['VACANT', 'OCCUPIED', 'UNDER_MAINTENANCE', 'RESERVED', 'INACTIVE']).optional(),
   monthlyRent: z.number().positive().optional(),
   description: z.string().optional(),
   unitType: z.string().optional(),
@@ -28,7 +28,7 @@ const updateUnitSchema = createUnitSchema.partial();
 // Get all units
 router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { propertyId, blockId, status, search } = req.query;
+    const { propertyId, blockId, floorId, status, search } = req.query;
 
     const where: any = {
       isDeleted: false,
@@ -40,6 +40,10 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 
     if (blockId) {
       where.blockId = blockId as string;
+    }
+
+    if (floorId) {
+      where.floorId = floorId as string;
     }
 
     if (status) {
@@ -218,7 +222,7 @@ router.post('/floors/:floorId/units', authenticate, async (req: AuthRequest, res
         propertyId: floor.propertyId,
         floorId: floorId,
         tid,
-        status: status || 'Vacant',
+        status: status || 'VACANT',
         monthlyRent: monthlyRent ? parseFloat(monthlyRent) : null,
         description: description || null,
         unitType: unitType || null,
@@ -512,7 +516,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
       });
 
       if (property) {
-        const occupiedCount = property.units.filter(u => u.status === 'Occupied').length;
+        const occupiedCount = property.units.filter(u => u.status === 'OCCUPIED').length;
         // Property status will be updated by other workflows
       }
     }
@@ -613,13 +617,13 @@ router.get('/analytics/floors/:propertyId', authenticate, async (req: AuthReques
     // Calculate analytics per floor
     const floorAnalytics = floors.map((floor) => {
       const totalUnits = floor.units.length;
-      const occupiedUnits = floor.units.filter((u) => u.status === 'Occupied').length;
+      const occupiedUnits = floor.units.filter((u) => u.status === 'OCCUPIED').length;
       const vacantUnits = totalUnits - occupiedUnits;
       const occupancyRate = totalUnits > 0 ? (occupiedUnits / totalUnits) * 100 : 0;
       
       // Calculate revenue from occupied units
       const revenue = floor.units
-        .filter((u) => u.status === 'Occupied' && u.monthlyRent)
+        .filter((u) => u.status === 'OCCUPIED' && u.monthlyRent)
         .reduce((sum, u) => sum + (u.monthlyRent || 0), 0);
 
       return {
@@ -645,6 +649,54 @@ router.get('/analytics/floors/:propertyId', authenticate, async (req: AuthReques
       error: 'Failed to fetch floor analytics',
       message: error instanceof Error ? error.message : 'Unknown error',
     });
+  }
+});
+
+// Get property unit stats (total, occupied, vacant, maintenance, reserved, inactive, revenue, occupancy rate)
+router.get('/stats/property/:propertyId', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { propertyId } = req.params;
+
+    const [floors, units] = await Promise.all([
+      prisma.floor.findMany({
+        where: { propertyId, isDeleted: false },
+        select: { id: true, name: true, floorNumber: true },
+        orderBy: { floorNumber: 'asc' },
+      }),
+      prisma.unit.findMany({
+        where: { propertyId, isDeleted: false },
+        select: { id: true, status: true, monthlyRent: true, floorId: true },
+      }),
+    ]);
+
+    const totalUnits = units.length;
+    const occupied = units.filter((u) => u.status === 'OCCUPIED').length;
+    const vacant = units.filter((u) => u.status === 'VACANT').length;
+    const maintenance = units.filter((u) => u.status === 'UNDER_MAINTENANCE').length;
+    const reserved = units.filter((u) => u.status === 'RESERVED').length;
+    const inactive = units.filter((u) => u.status === 'INACTIVE').length;
+    const monthlyRevenue = units
+      .filter((u) => u.status === 'OCCUPIED' && u.monthlyRent)
+      .reduce((sum, u) => sum + (u.monthlyRent || 0), 0);
+    const occupancyRate = totalUnits > 0 ? Math.round((occupied / totalUnits) * 10000) / 100 : 0;
+
+    res.json({
+      success: true,
+      data: {
+        totalFloors: floors.length,
+        totalUnits,
+        occupied,
+        vacant,
+        maintenance,
+        reserved,
+        inactive,
+        monthlyRevenue,
+        occupancyRate,
+      },
+    });
+  } catch (error) {
+    console.error('Get property unit stats error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch property unit stats' });
   }
 });
 

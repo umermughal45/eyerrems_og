@@ -44,7 +44,6 @@ import { PropertyDeleteDialog } from "./property-delete-dialog"
 import { EditStatusDialog } from "./edit-status-dialog"
 import { PropertyStructureSetupDialog } from "./property-structure-setup-dialog"
 import { UnitsView } from "./units-view"
-import { TenantsView } from "./tenants-view"
 import { LeasesView } from "./leases-view"
 import { SalesView } from "./sales-view"
 import { BuyersView } from "./buyers-view"
@@ -173,7 +172,7 @@ export function PropertiesView() {
 
   useEffect(() => {
     fetchProperties()
-  }, [currentPage, itemsPerPage, searchQuery])
+  }, [currentPage, itemsPerPage, searchQuery, activeFilters])
 
   const fetchProperties = useCallback(async () => {
     try {
@@ -187,8 +186,8 @@ export function PropertiesView() {
         page: currentPage,
         limit: itemsPerPage,
         search: searchQuery,
-        status: statusVal ? (Array.isArray(statusVal) ? (statusVal[0] as string) : (statusVal as string)) : undefined,
-        type: typeVal ? (Array.isArray(typeVal) ? (typeVal[0] as string) : (typeVal as string)) : undefined,
+        status: statusVal as string | string[] | undefined,
+        type: typeVal as string | string[] | undefined,
       })
 
       const responseData = response.data
@@ -703,7 +702,6 @@ export function PropertiesView() {
         <TabsList>
           <TabsTrigger value="properties">Properties</TabsTrigger>
           <TabsTrigger value="units">Units</TabsTrigger>
-          <TabsTrigger value="tenants">Tenants</TabsTrigger>
           <TabsTrigger value="leases">Leases</TabsTrigger>
           <TabsTrigger value="sales">Sales</TabsTrigger>
           <TabsTrigger value="buyers">Buyers</TabsTrigger>
@@ -837,11 +835,6 @@ export function PropertiesView() {
         {/* Units Tab */}
         <TabsContent value="units">
           <UnitsView />
-        </TabsContent>
-
-        {/* Tenants Tab */}
-        <TabsContent value="tenants">
-          <TenantsView />
         </TabsContent>
 
         {/* Leases Tab */}

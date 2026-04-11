@@ -527,20 +527,20 @@ export async function updateDashboardKPIs(propertyId: string) {
 
     // Calculate occupancy metrics
     const totalUnits = property.units.length;
-    const occupiedUnits = property.units.filter((u) => u.status === 'Occupied').length;
+    const occupiedUnits = property.units.filter((u) => u.status === 'OCCUPIED').length;
     const occupancyRate = totalUnits > 0 ? (occupiedUnits / totalUnits) * 100 : 0;
 
     // Calculate revenue from occupied units
     const monthlyRevenue = property.units
-      .filter((u) => u.status === 'Occupied' && u.monthlyRent)
+      .filter((u) => u.status === 'OCCUPIED' && u.monthlyRent)
       .reduce((sum, u) => sum + (u.monthlyRent || 0), 0);
 
     // Calculate floor-based metrics
     const floorMetrics = property.floors.map((floor) => {
       const floorUnits = floor.units;
-      const floorOccupied = floorUnits.filter((u) => u.status === 'Occupied').length;
+      const floorOccupied = floorUnits.filter((u) => u.status === 'OCCUPIED').length;
       const floorRevenue = floorUnits
-        .filter((u) => u.status === 'Occupied' && u.monthlyRent)
+        .filter((u) => u.status === 'OCCUPIED' && u.monthlyRent)
         .reduce((sum, u) => sum + (u.monthlyRent || 0), 0);
 
       return {
@@ -631,7 +631,7 @@ export async function createTenancyFromLease(leaseId: string) {
   // Update unit status
   await prisma.unit.update({
     where: { id: lease.unitId },
-    data: { status: 'Occupied' },
+    data: { status: 'OCCUPIED' },
   });
 
   // Auto-sync: Update dashboard KPIs

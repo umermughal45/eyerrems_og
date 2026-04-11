@@ -3,12 +3,13 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Home, TrendingDown, Clock, Loader2 } from "lucide-react"
+import { ArrowLeft, Home, TrendingDown, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { apiService } from "@/lib/api"
+import { formatCurrency } from "@/lib/utils"
 
 export default function VacantUnitsDetailsPage() {
   const router = useRouter()
@@ -17,7 +18,7 @@ export default function VacantUnitsDetailsPage() {
   const [stats, setStats] = useState({
     vacantUnits: 0,
     vacancyRate: 0,
-    avgVacantDays: 0,
+    lostMonthlyRevenue: 0,
   })
 
   useEffect(() => {
@@ -29,7 +30,6 @@ export default function VacantUnitsDetailsPage() {
       setLoading(true)
       const response: any = await apiService.units.getAll()
       const unitsData = response?.data?.data || response?.data || []
-      // Filter out units from houses (houses don't have units)
       const nonHouseUnits = Array.isArray(unitsData)
         ? unitsData.filter((u: any) => u.property?.type !== 'house')
         : []
@@ -37,16 +37,16 @@ export default function VacantUnitsDetailsPage() {
 
       setUnits(vacantUnits)
 
-      // Calculate stats - only for non-house units
-      const total = nonHouseUnits.length || 0
-      const vacant = vacantUnits.length || 0
+      const total = nonHouseUnits.length
+      const vacant = vacantUnits.length
       const vacancyRate = total > 0 ? (vacant / total) * 100 : 0
+      // Lost revenue = sum of monthlyRent on vacant units (potential income being missed)
+      const lostMonthlyRevenue = vacantUnits.reduce(
+        (sum: number, u: any) => sum + (parseFloat(u.monthlyRent) || 0),
+        0
+      )
 
-      setStats({
-        vacantUnits: vacant,
-        vacancyRate: vacancyRate,
-        avgVacantDays: 0, // Can be calculated if we track when units became vacant
-      })
+      setStats({ vacantUnits: vacant, vacancyRate, lostMonthlyRevenue })
     } catch (err: any) {
       console.error("Failed to fetch vacant units:", err)
       setUnits([])
@@ -96,11 +96,11 @@ export default function VacantUnitsDetailsPage() {
           <Card className="p-6 relative overflow-hidden bg-white dark:bg-[#0d212c] rounded-xl border-l-4 border-l-[#24344c] dark:border-l-[#0d212c] shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)]">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#3b82f6,#1d4ed8)] text-white shadow-lg transition-transform duration-300 hover:scale-110">
-                <Clock className="h-6 w-6 text-white" />
+                <TrendingDown className="h-6 w-6 text-white" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Avg Vacant Days</p>
-                <p className="text-2xl font-bold">{stats.avgVacantDays}</p>
+                <p className="text-sm text-muted-foreground">Lost Monthly Revenue</p>
+                <p className="text-2xl font-bold">{formatCurrency(stats.lostMonthlyRevenue)}</p>
               </div>
             </div>
           </Card>
@@ -121,7 +121,7 @@ export default function VacantUnitsDetailsPage() {
                   <TableHead>Property</TableHead>
                   <TableHead>Block</TableHead>
                   <TableHead>Unit</TableHead>
-                  <TableHead>Monthly Rent</TableHead>
+                  <TableHead>Listed Rent</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -131,7 +131,7 @@ export default function VacantUnitsDetailsPage() {
                     <TableCell className="font-medium">{unit.property?.name || "N/A"}</TableCell>
                     <TableCell>{unit.block?.name || "N/A"}</TableCell>
                     <TableCell>{unit.unitName || "N/A"}</TableCell>
-                    <TableCell>Rs {parseFloat(unit.monthlyRent || 0).toLocaleString()}</TableCell>
+                    <TableCell>{formatCurrency(parseFloat(unit.monthlyRent || 0))}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{unit.status || "Vacant"}</Badge>
                     </TableCell>

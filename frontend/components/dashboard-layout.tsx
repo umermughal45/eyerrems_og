@@ -153,7 +153,10 @@ const getNavigationForUser = (role: string, permissions?: string[], isSuperAdmin
 }
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const tidPattern = /^\d{4}-\d{2}-\d{4}$/
+  const tidPattern = /^TRX-\d{4}-\d{6}$/i
+  // Also match lead codes (LD-0001) and client codes (CLI-0001 or LD-CLI-0001)
+  const leadCodePattern = /^LD-\d{4}$/i
+  const clientCodePattern = /^(CLI-\d{4}|LD-CLI-\d{4})$/i
   // Load sidebar state from localStorage on mount
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -544,15 +547,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="search"
-                placeholder="Search by TID or property..."
+                placeholder="Search TID, LD-0001, CLI-0001..."
                 className="h-9 w-64 rounded-lg border border-input bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     const query = (e.target as HTMLInputElement).value.trim()
                     if (!query) return
 
-                    if (tidPattern.test(query)) {
-                      router.push(`/crm?search=${encodeURIComponent(query)}`)
+                    if (tidPattern.test(query) || leadCodePattern.test(query) || clientCodePattern.test(query)) {
+                      router.push(`/transactions/${encodeURIComponent(query.toUpperCase())}`)
                       ;(e.target as HTMLInputElement).value = ''
                       return
                     }

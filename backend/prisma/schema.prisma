@@ -421,7 +421,7 @@ model Unit {
   unitName           String
   propertyId         String
   blockId            String?
-  status             String        @default("Vacant")
+  status             UnitStatus    @default(VACANT)
   monthlyRent        Float?
   description        String?
   isDeleted          Boolean       @default(false)
@@ -434,9 +434,12 @@ model Unit {
   securityDeposit    Float?
   utilitiesIncluded  String[]
   tid                String?       @unique
+  salePrice          Float?
+  tenantId           String?
+  notes              String?
   deals              Deal[]        @relation("DealUnit")
   leases             Lease[]
-  tenant             Tenant?
+  tenant             Tenant?       @relation("UnitTenant")
   block              Block?        @relation(fields: [blockId], references: [id])
   floor              Floor?        @relation(fields: [floorId], references: [id])
   property           Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
@@ -480,7 +483,7 @@ model Tenant {
   receipts            Receipt[]
   reminders           RentReminder[]
   tenancies           Tenancy[]
-  unit                Unit                 @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  unit                Unit                 @relation("UnitTenant", fields: [unitId], references: [id], onDelete: Cascade)
   ledgerEntries       TenantLedger[]
   transactions        Transaction[]
   tenantPayments      TenantPayment[]
@@ -3027,6 +3030,14 @@ model LedgerEngineEntry {
   @@index([sourceType])
   @@index([entryDate])
   @@index([status])
+}
+
+enum UnitStatus {
+  VACANT
+  OCCUPIED
+  UNDER_MAINTENANCE
+  RESERVED
+  INACTIVE
 }
 
 enum FinancialOperationType {

@@ -101,7 +101,7 @@ export const updatePropertySchema = createPropertySchema.partial();
 /**
  * Unit Schemas
  */
-export const unitStatusEnum = z.enum(['Occupied', 'Vacant', 'Maintenance', 'Reserved']);
+export const unitStatusEnum = z.enum(['VACANT', 'OCCUPIED', 'UNDER_MAINTENANCE', 'RESERVED', 'INACTIVE']);
 
 export const createUnitSchema = z.object({
   tid: commonFields.tid,

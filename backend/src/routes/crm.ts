@@ -211,12 +211,12 @@ router.post('/leads/:id/convert', authenticate, async (req: AuthRequest, res: Re
       tid = await TransactionIdentityEngine.generateTransactionID();
     }
 
-    // Generate system ID: CLxxxx
-    const clientCode = await IdService.generateEntityId('CL');
+    // Generate converted client code: LD-CLI-0001 (signals this client came from a lead)
+    const clientCode = await IdService.generateConvertedClientCode();
 
     // Get next srNo and clientNo using sequence (keeping legacy fields for now)
     const srNo = await generateSequenceNumber('CLI_SR');
-    const nextClientNo = `CL-${String(srNo).padStart(4, '0')}`;
+    const nextClientNo = clientCode; // use the new code as clientNo too
 
     // Create client from lead
     const client = await prisma.$transaction(async (tx) => {
@@ -487,10 +487,10 @@ router.post('/clients', authenticate, upload.any(), async (req: AuthRequest, res
       await validateManualUniqueId(manualUniqueId, 'cli');
     }
 
-    // Generate TID if not provided
-    const clientTid = tid || await IdService.generateTID();
+    // Generate TID if not provided — always use TRX-YYYY-NNNNNN format
+    const clientTid = tid || await TransactionIdentityEngine.generateTransactionID();
 
-    // Generate system ID: CLxxxx
+    // Generate system ID: CLI-0001 (direct client, not from lead conversion)
     const clientCode = await IdService.generateEntityId('CL');
 
     // Get next srNo and clientNo (legacy)
@@ -498,7 +498,7 @@ router.post('/clients', authenticate, upload.any(), async (req: AuthRequest, res
       orderBy: { createdAt: 'desc' },
     });
     const nextSrNo = lastClient?.srNo ? (lastClient.srNo + 1) : 1;
-    const nextClientNo = `CL-${String(nextSrNo).padStart(4, '0')}`;
+    const nextClientNo = clientCode; // use the new code as clientNo too
 
     const client = await prisma.$transaction(async (tx) => {
       return await tx.client.create({
@@ -515,6 +515,9 @@ router.post('/clients', authenticate, upload.any(), async (req: AuthRequest, res
         }
       });
     });
+
+    // Register TID in the identity registry
+    await TransactionIdentityEngine.attachTid(clientTid, 'client', client.id, 'CRM');
 
     await createActivity({
       type: 'client',

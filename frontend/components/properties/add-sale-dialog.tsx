@@ -1,580 +1,381 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import React, { useState, useEffect } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Loader2 } from "lucide-react"
 import { apiService } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
-import { AddBuyerDialog } from "./add-buyer-dialog"
-import { Plus } from "lucide-react"
+import { formatCurrency } from "@/lib/utils"
+
+const saleSchema = z.object({
+  propertyId: z.string().min(1, "Property is required"),
+  sellerId: z.string().min(1, "Seller is required"),
+  buyerId: z.string().min(1, "Buyer is required"),
+  salePrice: z.number().min(0, "Sale price must be positive"),
+  commission: z.number().min(0).optional(),
+  commissionPercentage: z.number().min(0).max(100).optional(),
+  dealDate: z.string().min(1, "Deal date is required"),
+  status: z.enum(["Pending", "Completed", "Cancelled"]).optional(),
+  notes: z.string().optional(),
+  tid: z.string().min(1, "TID is required"),
+})
+
+type SaleFormData = z.infer<typeof saleSchema>
 
 interface AddSaleDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess?: () => void
+  onSuccess: () => void
+  sale?: any // For edit mode
 }
 
-export function AddSaleDialog({ open, onOpenChange, onSuccess }: AddSaleDialogProps) {
-  const [formData, setFormData] = useState({
-    tid: "",
-    propertyId: "",
-    buyerId: "",
-    dealer: "",
-    saleValue: "",
-    commission: "",
-    saleDate: "",
-    status: "Pending",
-    notes: "",
-  })
-  const [selectedProperty, setSelectedProperty] = useState<any>(null)
-  const [actualPropertyValue, setActualPropertyValue] = useState<number>(0)
-  const [profit, setProfit] = useState<number>(0)
-  const [documents, setDocuments] = useState<File[]>([])
-  const [dealers, setDealers] = useState<any[]>([])
-  const [properties, setProperties] = useState<any[]>([])
-  const [buyers, setBuyers] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [showAddBuyerDialog, setShowAddBuyerDialog] = useState(false)
+export function AddSaleDialog({ open, onOpenChange, onSuccess, sale }: AddSaleDialogProps) {
   const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
+  const [properties, setProperties] = useState<any[]>([])
+  const [sellers, setSellers] = useState<any[]>([])
+  const [buyers, setBuyers] = useState<any[]>([])
 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+    reset,
+  } = useForm<SaleFormData>({
+    resolver: zodResolver(saleSchema),
+    defaultValues: {
+      status: "Pending",
+    },
+  })
+
+  // Fetch data when dialog opens
   useEffect(() => {
     if (open) {
-      fetchDealers()
-      fetchProperties()
-      fetchBuyers()
+      fetchData()
     }
   }, [open])
 
-  const fetchDealers = async () => {
-    try {
-      setLoading(true)
-      const response: any = await apiService.dealers.getAll()
-      const responseData = response.data as any
-      const dealersData = Array.isArray(responseData?.data) ? responseData.data : Array.isArray(responseData) ? responseData : []
-      setDealers(Array.isArray(dealersData) ? dealersData : [])
-    } catch (err: any) {
-      // Dealers endpoint might not exist yet, that's okay - it's optional
-      // Silently fail - dealers are optional
-      if (err.response?.status !== 404) {
-        console.error("Failed to fetch dealers:", err)
-      }
-      setDealers([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchProperties = async () => {
-    try {
-      setLoading(true)
-      const response: any = await apiService.properties.getAll()
-      const responseData = response.data as any
-      const propertiesData = Array.isArray(responseData?.data) ? responseData.data : Array.isArray(responseData) ? responseData : []
-      
-      // Filter out properties with active leases
-      let propertiesWithActiveLeases: string[] = []
-      try {
-        const leasesResponse: any = await apiService.leases.getAll()
-        const leasesResponseData = leasesResponse.data as any
-        const leases = Array.isArray(leasesResponseData?.data) ? leasesResponseData.data : Array.isArray(leasesResponseData) ? leasesResponseData : []
-        const activeLeases = Array.isArray(leases) 
-          ? leases.filter((l: any) => l.status === 'Active' || l.status === 'active')
-          : []
-        propertiesWithActiveLeases = activeLeases
-          .map((lease: any) => lease.unit?.propertyId || lease.propertyId)
-          .filter(Boolean)
-      } catch (leaseErr) {
-        console.error("Failed to fetch leases for filtering:", leaseErr)
-      }
-      
-      // Filter out properties with active leases and already sold properties
-      const filteredProperties = Array.isArray(propertiesData)
-        ? propertiesData.filter((property: any) => {
-            const isSold = property.status === "Sold" || property.sales?.some((s: any) => s.status === "Completed")
-            const hasActiveLease = propertiesWithActiveLeases.includes(property.id)
-            return !isSold && !hasActiveLease
-          })
-        : []
-      
-      const sortedProperties = filteredProperties.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || ""))
-      setProperties(sortedProperties)
-    } catch (err: any) {
-      console.error("Failed to fetch properties:", err)
-      setProperties([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchBuyers = async () => {
-    try {
-      setLoading(true)
-      const response: any = await apiService.buyers.getAll()
-      const responseData = response.data as any
-      const buyersData = Array.isArray(responseData?.data) ? responseData.data : Array.isArray(responseData) ? responseData : []
-      // Sort buyers alphabetically by name
-      const sortedBuyers = Array.isArray(buyersData)
-        ? buyersData.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || ""))
-        : []
-      setBuyers(sortedBuyers)
-    } catch (err: any) {
-      console.error("Failed to fetch buyers:", err)
-      setBuyers([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDealerChange = (dealerId: string) => {
-    const dealer = dealers.find((d) => d.id === dealerId)
-    setFormData({ ...formData, dealer: dealerId })
-
-    // Auto-calculate commission if sale value exists
-    if (formData.saleValue && dealer) {
-      const calculatedCommission = (Number.parseFloat(formData.saleValue) * (dealer.commissionRate || 0)) / 100
-      setFormData((prev) => ({ ...prev, dealer: dealerId, commission: calculatedCommission.toFixed(2) }))
-    }
-  }
-
-  const handlePropertyChange = (propertyId: string) => {
-    const property = properties.find((p) => p.id === propertyId)
-    setSelectedProperty(property)
-    // Prefer explicit sale price from property
-    const value =
-      (property?.salePrice !== undefined && property?.salePrice !== null
-        ? property.salePrice
-        : property?.value || property?.actualValue || 0) || 0
-    setActualPropertyValue(value)
-    setFormData({ ...formData, propertyId, saleValue: value ? value.toString() : "" })
-    setProfit(0)
-  }
-
-  const handleSalePriceChange = (price: string) => {
-    const salePrice = parseFloat(price) || 0
-    setFormData((prev) => ({ ...prev, saleValue: price }))
-    
-    // Calculate profit
-    setProfit(salePrice - actualPropertyValue)
-
-    // Auto-calculate commission if dealer is selected (default 2% if no dealer)
-    if (price) {
-      if (formData.dealer) {
-        const dealer = dealers.find((d) => d.id === formData.dealer)
-        if (dealer) {
-          const calculatedCommission = (salePrice * (dealer.commissionRate || 0)) / 100
-          setFormData((prev) => ({ ...prev, saleValue: price, commission: calculatedCommission.toFixed(2) }))
-        }
+  // Reset form when dialog opens/closes or sale changes
+  useEffect(() => {
+    if (open) {
+      if (sale) {
+        // Edit mode
+        setValue("propertyId", sale.propertyId || "")
+        setValue("sellerId", sale.sellerId || "")
+        setValue("buyerId", sale.buyerId || "")
+        setValue("salePrice", sale.salePrice || 0)
+        setValue("commission", sale.commission || undefined)
+        setValue("commissionPercentage", sale.commissionPercentage || undefined)
+        setValue("dealDate", sale.dealDate ? new Date(sale.dealDate).toISOString().split('T')[0] : "")
+        setValue("status", sale.status || "Pending")
+        setValue("notes", sale.notes || "")
+        setValue("tid", sale.tid || "")
       } else {
-        // Default 2% commission if no dealer selected
-        const calculatedCommission = (salePrice * 2) / 100
-        setFormData((prev) => ({ ...prev, saleValue: price, commission: calculatedCommission.toFixed(2) }))
+        // Add mode
+        reset({
+          propertyId: "",
+          sellerId: "",
+          buyerId: "",
+          salePrice: 0,
+          commission: undefined,
+          commissionPercentage: undefined,
+          dealDate: "",
+          status: "Pending",
+          notes: "",
+          tid: "",
+        })
       }
     }
-  }
+  }, [open, sale, setValue, reset])
 
-  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (files) {
-      setDocuments(Array.from(files))
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const fetchData = async () => {
     try {
-      setSubmitting(true)
-      
-      // Validate required fields
-      if (!formData.propertyId) {
-        toast({
-          title: "Error",
-          description: "Please select a property",
-          variant: "destructive",
-        })
-        setSubmitting(false)
-        return
-      }
-      
-      if (!formData.saleValue || parseFloat(formData.saleValue) <= 0) {
-        toast({
-          title: "Error",
-          description: "Please enter a valid sale price",
-          variant: "destructive",
-        })
-        setSubmitting(false)
-        return
-      }
+      const [propertiesRes, sellersRes, buyersRes] = await Promise.all([
+        apiService.properties.getAll(),
+        apiService.sellers.getAll(),
+        apiService.buyers.getAll(),
+      ])
 
-      const saleValue = parseFloat(formData.saleValue)
-      if (actualPropertyValue && Math.abs(saleValue - actualPropertyValue) > 0.01) {
-        toast({
-          title: "Error",
-          description: "Sale price must match the property's configured sales price",
-          variant: "destructive",
-        })
-        setSubmitting(false)
-        return
-      }
-      const commission = parseFloat(formData.commission) || 0
-      
-      // Calculate commission rate from commission and sale value
-      const commissionRate = saleValue > 0 ? (commission / saleValue) * 100 : 2.0
-
-      // Upload documents if any
-      const documentUrls: string[] = []
-      if (documents.length > 0) {
-        try {
-          for (const file of documents) {
-            const reader = new FileReader()
-            const base64 = await new Promise<string>((resolve, reject) => {
-              reader.onload = () => resolve(reader.result as string)
-              reader.onerror = reject
-              reader.readAsDataURL(file)
-            })
-            
-            const uploadResponse: any = await apiService.upload.image({ image: base64, filename: file.name })
-            const url = uploadResponse?.data?.url || uploadResponse?.data?.data?.url
-            if (url) {
-              documentUrls.push(url)
-            }
-          }
-        } catch (uploadErr) {
-          console.error("Failed to upload documents:", uploadErr)
-          toast({
-            title: "Warning",
-            description: "Some documents failed to upload. Sale will be created without them.",
-            variant: "default",
-          })
-        }
-      }
-
-      const payload: any = {
-        tid: formData.tid,
-        propertyId: formData.propertyId,
-        saleValue: saleValue,
-        commissionRate: commissionRate,
-        status: formData.status || "Pending",
-        actualPropertyValue: actualPropertyValue,
-        profit: profit,
-      }
-
-      // Add documents if uploaded
-      if (documentUrls.length > 0) {
-        payload.documents = documentUrls
-      }
-
-      // Add dealerId if selected
-      if (formData.dealer) {
-        payload.dealerId = formData.dealer
-      }
-
-      // Convert saleDate to ISO string if provided
-      if (formData.saleDate) {
-        const date = new Date(formData.saleDate)
-        payload.saleDate = date.toISOString()
-      }
-      
-      if (formData.notes && formData.notes.trim()) {
-        payload.notes = formData.notes.trim()
-      }
-
-      console.log('Sending sale payload:', payload)
-      await apiService.sales.create(payload)
-      toast({
-        title: "Success",
-        description: "Sale added successfully",
-        variant: "default",
-      })
-      onSuccess?.()
-      onOpenChange(false)
-      setFormData({
-        tid: "",
-        propertyId: "",
-        buyerId: "",
-        dealer: "",
-        saleValue: "",
-        commission: "",
-        saleDate: "",
-        status: "Pending",
-        notes: "",
-      })
-      setSelectedProperty(null)
-      setActualPropertyValue(0)
-      setProfit(0)
-      setDocuments([])
-    } catch (err: any) {
-      console.error("Failed to create sale:", err)
-      console.error("Error response:", err.response?.data)
-      const errorMessage = err.response?.data?.message || 
-                          err.response?.data?.error || 
-                          (err.response?.data?.details ? 
-                            err.response.data.details.map((d: any) => `${d.path?.join('.')}: ${d.message}`).join(', ') : 
-                            null) ||
-                          "Failed to create sale"
+      setProperties(Array.isArray(propertiesRes.data?.data) ? propertiesRes.data.data : [])
+      setSellers(Array.isArray(sellersRes.data?.data) ? sellersRes.data.data : [])
+      setBuyers(Array.isArray(buyersRes.data?.data) ? buyersRes.data.data : [])
+    } catch (error) {
+      console.error("Failed to fetch data:", error)
       toast({
         title: "Error",
-        description: errorMessage,
+        description: "Failed to load properties, sellers, and buyers",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const onSubmit = async (data: SaleFormData) => {
+    try {
+      setLoading(true)
+
+      const payload = {
+        ...data,
+        dealDate: new Date(data.dealDate).toISOString(),
+        commission: data.commission || null,
+        commissionPercentage: data.commissionPercentage || null,
+      }
+
+      if (sale) {
+        await apiService.sales.update(sale.id, payload)
+        toast({
+          title: "Success",
+          description: "Sale updated successfully",
+        })
+      } else {
+        await apiService.sales.create(payload)
+        toast({
+          title: "Success",
+          description: "Sale added successfully",
+        })
+      }
+
+      onSuccess()
+    } catch (error: any) {
+      console.error("Sale save error:", error)
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || error.response?.data?.error || "Failed to save sale",
         variant: "destructive",
       })
     } finally {
-      setSubmitting(false)
+      setLoading(false)
     }
   }
 
+  const calculateCommission = (salePrice: number, percentage: number) => {
+    if (salePrice && percentage) {
+      return (salePrice * percentage) / 100
+    }
+    return 0
+  }
+
+  const watchedSalePrice = watch("salePrice")
+  const watchedCommissionPercentage = watch("commissionPercentage")
+
+  // Auto-calculate commission when percentage changes
+  useEffect(() => {
+    if (watchedSalePrice && watchedCommissionPercentage) {
+      const calculatedCommission = calculateCommission(watchedSalePrice, watchedCommissionPercentage)
+      setValue("commission", calculatedCommission)
+    }
+  }, [watchedSalePrice, watchedCommissionPercentage, setValue])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[900px] max-w-[90vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Property Sale</DialogTitle>
-          <DialogDescription>Enter the details for the new property sale</DialogDescription>
+          <DialogTitle>{sale ? "Edit Sale" : "Add New Sale"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="tid">Tracking ID *</Label>
-            <Input
-              id="tid"
-              value={formData.tid}
-              onChange={(e) => setFormData({ ...formData, tid: e.target.value })}
-              placeholder="SLE-XXXX"
-              required
-            />
-            <p className="text-xs text-muted-foreground">Enter unique tracking ID</p>
-          </div>
 
-          {/* Property Information */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Property Information</h3>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="propertyId">Property</Label>
+              <Label htmlFor="propertyId">Property *</Label>
               <Select
-                value={formData.propertyId}
-                onValueChange={handlePropertyChange}
-                required
+                value={watch("propertyId")}
+                onValueChange={(value) => setValue("propertyId", value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select property" />
                 </SelectTrigger>
                 <SelectContent>
-                  {loading ? (
-                    <SelectItem value="loading" disabled>Loading properties...</SelectItem>
-                  ) : properties.length === 0 ? (
-                    <SelectItem value="none" disabled>No properties available</SelectItem>
-                  ) : (
-                    properties.map((property) => {
-                      const isSold = property.status === "Sold" || property.sales?.some((s: any) => s.status === "Completed")
-                      return (
-                        <SelectItem 
-                          key={property.id} 
-                          value={property.id}
-                          disabled={isSold}
-                        >
-                          {property.tid ? `[${property.tid}] ` : ""}{property.name} - {property.type || "N/A"} {isSold ? "(Already Sold)" : ""}
-                        </SelectItem>
-                      )
-                    })
-                  )}
+                  {properties.map((property) => (
+                    <SelectItem key={property.id} value={property.id}>
+                      {property.title || property.address} - {formatCurrency(property.price)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+              {errors.propertyId && (
+                <p className="text-sm text-red-600">{errors.propertyId.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sellerId">Seller *</Label>
+              <Select
+                value={watch("sellerId")}
+                onValueChange={(value) => setValue("sellerId", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select seller" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sellers.map((seller) => (
+                    <SelectItem key={seller.id} value={seller.id}>
+                      {seller.fullName} - {seller.phone}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.sellerId && (
+                <p className="text-sm text-red-600">{errors.sellerId.message}</p>
+              )}
             </div>
           </div>
 
-          {/* Buyer Information */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-foreground">Buyer Information</h3>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAddBuyerDialog(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Buyer
-              </Button>
-            </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="buyerId">Buyer (Optional)</Label>
+              <Label htmlFor="buyerId">Buyer *</Label>
               <Select
-                value={formData.buyerId}
-                onValueChange={(value) => setFormData({ ...formData, buyerId: value })}
+                value={watch("buyerId")}
+                onValueChange={(value) => setValue("buyerId", value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select buyer" />
                 </SelectTrigger>
                 <SelectContent>
-                  {loading ? (
-                    <SelectItem value="loading" disabled>Loading buyers...</SelectItem>
-                  ) : buyers.length === 0 ? (
-                    <SelectItem value="none" disabled>No buyers available</SelectItem>
-                  ) : (
-                    buyers.map((buyer) => (
-                      <SelectItem key={buyer.id} value={buyer.id}>
-                        {buyer.name} {buyer.email ? `(${buyer.email})` : ""}
-                      </SelectItem>
-                    ))
-                  )}
+                  {buyers.map((buyer) => (
+                    <SelectItem key={buyer.id} value={buyer.id}>
+                      {buyer.fullName} - {buyer.phone}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+              {errors.buyerId && (
+                <p className="text-sm text-red-600">{errors.buyerId.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dealDate">Deal Date *</Label>
+              <Input
+                id="dealDate"
+                type="date"
+                {...register("dealDate")}
+              />
+              {errors.dealDate && (
+                <p className="text-sm text-red-600">{errors.dealDate.message}</p>
+              )}
             </div>
           </div>
 
-          {/* Dealer Information */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Dealer/Agent Information</h3>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="dealer">Assigned Dealer/Agent</Label>
-              <Select value={formData.dealer} onValueChange={handleDealerChange}>
+              <Label htmlFor="salePrice">Sale Price *</Label>
+              <Input
+                id="salePrice"
+                type="number"
+                {...register("salePrice", { valueAsNumber: true })}
+                placeholder="Enter sale price"
+              />
+              {errors.salePrice && (
+                <p className="text-sm text-red-600">{errors.salePrice.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={watch("status")}
+                onValueChange={(value) => setValue("status", value as "Pending" | "Completed" | "Cancelled")}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select dealer" />
+                  <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {loading ? (
-                    <SelectItem value="loading" disabled>Loading dealers...</SelectItem>
-                  ) : dealers.length === 0 ? (
-                    <SelectItem value="none" disabled>No dealers available</SelectItem>
-                  ) : (
-                    dealers.map((dealer) => (
-                      <SelectItem key={dealer.id} value={dealer.id}>
-                        {dealer.tid ? `[${dealer.tid}] ` : ""}{dealer.name} - {dealer.specialization} ({dealer.commissionRate || 0}%)
-                      </SelectItem>
-                    ))
-                  )}
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="Cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.status && (
+                <p className="text-sm text-red-600">{errors.status.message}</p>
+              )}
             </div>
           </div>
 
-          {/* Sale Details */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Sale Details</h3>
-            {selectedProperty && actualPropertyValue > 0 && (
-              <div className="space-y-2 p-3 bg-muted rounded-lg">
-                <Label className="text-xs text-muted-foreground">Sales Price (Read-only)</Label>
-                <p className="text-lg font-semibold text-foreground">Rs {actualPropertyValue.toLocaleString("en-IN")}</p>
-                <p className="text-xs text-muted-foreground">This value is read-only</p>
-              </div>
-            )}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="saleValue">Sale Price</Label>
-                <Input
-                  id="saleValue"
-                  type="number"
-                  step="0.01"
-                  value={formData.saleValue}
-                  onChange={(e) => handleSalePriceChange(e.target.value)}
-                  placeholder="0.00"
-                  required
-                readOnly={!!selectedProperty?.salePrice}
-                className={`${
-                  selectedProperty?.salePrice ? "bg-muted" : ""
-                }`}
-                />
-              </div>
-              {profit !== 0 && (
-                <div className="space-y-2">
-                  <Label htmlFor="profit">Profit (Auto-calculated)</Label>
-                  <Input
-                    id="profit"
-                    type="number"
-                    value={profit.toFixed(2)}
-                    readOnly
-                    className="bg-muted"
-                  />
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="commission">Commission (Auto-calculated)</Label>
-                <Input
-                  id="commission"
-                  type="number"
-                  value={formData.commission}
-                  onChange={(e) => setFormData({ ...formData, commission: e.target.value })}
-                  placeholder="0.00"
-                  readOnly
-                  className="bg-muted"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="saleDate">Sale Date</Label>
-                <Input
-                  id="saleDate"
-                  type="date"
-                  value={formData.saleDate}
-                  onChange={(e) => setFormData({ ...formData, saleDate: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                    <SelectItem value="Cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Additional notes about the sale..."
-                rows={3}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="documents">Documents (Optional)</Label>
+              <Label htmlFor="commissionPercentage">Commission %</Label>
               <Input
-                id="documents"
-                type="file"
-                multiple
-                onChange={handleDocumentUpload}
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                id="commissionPercentage"
+                type="number"
+                step="0.01"
+                {...register("commissionPercentage", { valueAsNumber: true })}
+                placeholder="Enter commission percentage"
               />
-              {documents.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  <p className="text-xs text-muted-foreground">Selected files:</p>
-                  {documents.map((file, index) => (
-                    <p key={index} className="text-xs text-foreground">{file.name}</p>
-                  ))}
-                </div>
+              {errors.commissionPercentage && (
+                <p className="text-sm text-red-600">{errors.commissionPercentage.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="commission">Commission Amount</Label>
+              <Input
+                id="commission"
+                type="number"
+                {...register("commission", { valueAsNumber: true })}
+                placeholder="Auto-calculated or enter manually"
+              />
+              {errors.commission && (
+                <p className="text-sm text-red-600">{errors.commission.message}</p>
               )}
             </div>
           </div>
 
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              {...register("notes")}
+              placeholder="Enter sale notes"
+              rows={3}
+            />
+            {errors.notes && (
+              <p className="text-sm text-red-600">{errors.notes.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tid">TID *</Label>
+            <Input
+              id="tid"
+              {...register("tid")}
+              placeholder="Enter TID"
+            />
+            {errors.tid && (
+              <p className="text-sm text-red-600">{errors.tid.message}</p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Adding..." : "Add Sale"}
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {sale ? "Update Sale" : "Add Sale"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
-      <AddBuyerDialog
-        open={showAddBuyerDialog}
-        onOpenChange={(open) => {
-          setShowAddBuyerDialog(open)
-          if (!open) {
-            // Refresh buyers list after adding
-            fetchBuyers()
-          }
-        }}
-      />
     </Dialog>
   )
 }

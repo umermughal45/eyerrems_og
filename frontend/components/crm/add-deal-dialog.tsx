@@ -152,6 +152,7 @@ export function AddDealDialog({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [financialLinkage, setFinancialLinkage] = useState<DealFinancialLinkage | null>(null)
   const [isLoadingLinkage, setIsLoadingLinkage] = useState(false)
+  const [isFetchingClientTid, setIsFetchingClientTid] = useState(false)
   const { toast } = useToast()
   const isEdit = mode === "edit" && !!initialData?.id
   const { options: stageOverrides } = useDropdownOptions("crm.deal.stage")
@@ -269,6 +270,28 @@ export function AddDealDialog({
     setUploading(false)
   }
 
+  // Auto-fetch client's TID when a client is selected (new deal only)
+  const handleClientChange = async (clientId: string | null) => {
+    setFormData(prev => ({ ...prev, clientId: clientId || "" }))
+    if (errors.clientId) setErrors(prev => ({ ...prev, clientId: "" }))
+
+    if (!clientId || isEdit) return
+
+    setIsFetchingClientTid(true)
+    try {
+      const res: any = await apiService.transactionsCrm.getClientTID(clientId)
+      const data = res.data?.data || res.data
+      if (data?.tid) {
+        setFormData(prev => ({ ...prev, tid: data.tid }))
+      }
+    } catch (err) {
+      // Client may not have a TID yet — that's fine, backend will handle it
+      console.warn("Could not fetch client TID:", err)
+    } finally {
+      setIsFetchingClientTid(false)
+    }
+  }
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
@@ -334,11 +357,6 @@ export function AddDealDialog({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
-    // Validate TID (only for new deals)
-    if (!isEdit && (!formData.tid || formData.tid.trim() === "")) {
-      newErrors.tid = "Transaction ID is required"
-    }
-
     if (!formData.title || formData.title.trim() === "") {
       newErrors.title = "Deal title is required"
     }
@@ -369,11 +387,6 @@ export function AddDealDialog({
       }
     }
 
-    if (formData.stage === "negotiation") {
-      // Check if there are non-advance payments (would need to check payment types)
-      // This is a simplified check - backend will enforce the full rule
-    }
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -389,7 +402,6 @@ export function AddDealDialog({
 
     try {
       const payload = {
-        tid: formData.tid,
         title: formData.title,
         clientId: formData.clientId,
         propertyId: formData.propertyId,
@@ -474,23 +486,24 @@ export function AddDealDialog({
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* TID Field */}
+            {/* TID Field — auto-populated from selected client */}
             <div className="grid gap-2">
-              <Label htmlFor="tid">Transaction ID <span className="text-destructive">*</span></Label>
-              <Input
-                id="tid"
-                placeholder="DL-XXXX"
-                value={formData.tid || ""}
-                onChange={(e) => {
-                  setFormData({ ...formData, tid: e.target.value })
-                  if (errors.tid) setErrors({ ...errors, tid: "" })
-                }}
-                className={errors.tid ? "border-destructive" : ""}
-                required
-                disabled={isEdit} // TID cannot be changed after creation
-              />
-              {errors.tid && <p className="text-sm text-destructive">{errors.tid}</p>}
-              <p className="text-xs text-muted-foreground">Enter unique transaction ID</p>
+              <Label htmlFor="tid">Transaction ID (Auto-linked)</Label>
+              <div className="relative">
+                <Input
+                  id="tid"
+                  value={formData.tid || (isFetchingClientTid ? "Fetching..." : "Select a client to auto-link TID")}
+                  disabled
+                  className="bg-muted text-muted-foreground font-mono"
+                  placeholder="TRX-2026-000001"
+                />
+                {isFetchingClientTid && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {isEdit ? "TID is immutable after deal creation" : "Automatically inherited from the selected client"}
+              </p>
             </div>
 
             <div className="grid gap-2">
@@ -514,8 +527,7 @@ export function AddDealDialog({
                 label="Client"
                 value={formData.clientId || null}
                 onChange={(value) => {
-                  setFormData({ ...formData, clientId: value || "" })
-                  if (errors.clientId) setErrors({ ...errors, clientId: "" })
+                  handleClientChange(value)
                 }}
                 required
                 placeholder="Search and select client..."
