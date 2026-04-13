@@ -1257,10 +1257,15 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response) =
         const propertiesThisMonth = await prisma.property.count({ where: { isDeleted: false, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } });
         const tenantsThisMonth = await prisma.tenant.count({ where: { isDeleted: false, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } });
         const propertyTypeData = await prisma.property.groupBy({ by: ['type'], where: { isDeleted: false }, _count: { id: true } });
-        const recentActivities = (await prisma.activity.findMany({ orderBy: { createdAt: 'desc' }, take: 10 })).map(activity => ({
-          ...activity,
-          timeAgo: getTimeAgo(activity.createdAt)
-        }));
+        const recentActivities = await (async () => {
+          try {
+            if (!(prisma as any).activity) return [];
+            return (await (prisma as any).activity.findMany({ orderBy: { createdAt: 'desc' }, take: 10 }))
+              .map((a: any) => ({ ...a, timeAgo: getTimeAgo(a.createdAt) }));
+          } catch {
+            return [];
+          }
+        })();
 
         return {
           totalProperties,
@@ -1283,8 +1288,19 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response) =
       (async () => {
         const totalEmployees = await prisma.employee.count({ where: { isDeleted: false } });
         const employeesThisMonth = await prisma.employee.count({ where: { isDeleted: false, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } });
-        const activeToday = await prisma.attendance.count({ where: { date: new Date().toISOString().split('T')[0], status: 'Present' } });
-        const pendingLeaves = await prisma.leaveRequest.count({ where: { status: 'Pending' } });
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
+        const activeToday = await prisma.attendance.count({
+          where: {
+            date: { gte: today, lte: endOfToday },
+            status: { in: ['present', 'Present', 'late', 'Late', 'half-day'] },
+          },
+        });
+        const pendingLeaves = await prisma.leaveRequest.count({
+          where: { status: { in: ['pending', 'Pending'] } },
+        });
 
         return {
           totalEmployees,
@@ -1315,16 +1331,24 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response) =
 
       // Finance stats
       (async () => {
-        const totalRevenue = await prisma.transaction.aggregate({ where: { transactionType: 'Income' }, _sum: { amount: true } });
-        const totalExpenses = await prisma.transaction.aggregate({ where: { transactionType: 'Expense' }, _sum: { amount: true } });
-        const pendingInvoices = await prisma.invoice.count({ where: { status: 'Pending' } });
-        const overdueInvoices = await prisma.invoice.count({ where: { status: 'Overdue' } });
+        const [totalRevenueRes, totalExpensesRes, pendingInvoices, overdueInvoices] = await Promise.all([
+          prisma.transaction.aggregate({
+            where: { transactionType: { in: ['income', 'Income'] } },
+            _sum: { totalAmount: true },
+          }),
+          prisma.transaction.aggregate({
+            where: { transactionType: { in: ['expense', 'Expense'] } },
+            _sum: { totalAmount: true },
+          }),
+          prisma.invoice.count({ where: { status: { in: ['pending', 'Pending', 'unpaid'] } } }),
+          prisma.invoice.count({ where: { status: { in: ['overdue', 'Overdue'] } } }),
+        ]);
 
         return {
-          totalRevenue: totalRevenue._sum?.amount || 0,
-          totalExpenses: totalExpenses._sum?.amount || 0,
+          totalRevenue: totalRevenueRes._sum?.totalAmount || 0,
+          totalExpenses: totalExpensesRes._sum?.totalAmount || 0,
           pendingInvoices,
-          overdueInvoices
+          overdueInvoices,
         };
       })(),
 
@@ -1347,24 +1371,24 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response) =
 
           const revenue = await prisma.transaction.aggregate({
             where: {
-              transactionType: 'Income',
+              transactionType: { in: ['income', 'Income'] },
               date: { gte: monthStart, lte: monthEnd }
             },
-            _sum: { amount: true }
+            _sum: { totalAmount: true }
           });
 
           const expenses = await prisma.transaction.aggregate({
             where: {
-              transactionType: 'Expense',
+              transactionType: { in: ['expense', 'Expense'] },
               date: { gte: monthStart, lte: monthEnd }
             },
-            _sum: { amount: true }
+            _sum: { totalAmount: true }
           });
 
           data.push({
             month: monthLabel,
-            revenue: revenue._sum?.amount || 0,
-            expenses: expenses._sum?.amount || 0
+            revenue: revenue._sum?.totalAmount || 0,
+            expenses: expenses._sum?.totalAmount || 0
           });
         }
 

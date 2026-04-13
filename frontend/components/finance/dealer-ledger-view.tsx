@@ -363,11 +363,10 @@ export function DealerLedgerView({ dealerId, dealerName }: DealerLedgerViewProps
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-12 text-muted-foreground space-y-2">
-            <p>No ledger entries found for this dealer.</p>
-            {ledger?.hasLegacyEntries === false && ledger?.hasLedgerEntries === false && (
-              <p className="text-sm">Dealer ledger is empty. Create commissions or voucher payments to see entries.</p>
-            )}
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+            <FileText className="h-10 w-10 opacity-20" />
+            <p className="text-sm font-medium">No transactions yet</p>
+            <p className="text-xs opacity-70">Create commissions or voucher payments to see entries.</p>
           </div>
         )}
       </Card>

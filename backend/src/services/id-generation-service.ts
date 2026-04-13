@@ -486,17 +486,10 @@ export async function validateManualUniqueId(
 }
 
 /**
- * Validate TID (Transaction ID) - must be unique across Property, Deal, Client, Lead, Employee, and Tenant
- * 
- * @param tid - Transaction ID to validate
- * @param excludePropertyId - Optional property ID to exclude from check (for updates)
- * @param excludeDealId - Optional deal ID to exclude from check (for updates)
- * @param excludeClientId - Optional client ID to exclude from check (for updates)
- * @param excludeLeadId - Optional lead ID to exclude from check (for updates)
- * @param excludeEmployeeId - Optional employee ID to exclude from check (for updates)
- * @param excludeTenantId - Optional tenant ID to exclude from check (for updates)
- * @param tx - Optional transaction client
- * @returns true if valid, throws error if invalid
+ * Validate TID (Transaction ID) — ensures the TID is well-formed.
+ * NOTE: Under the unified TID model, the same TID is shared across Client, Deal,
+ * Payment, and LedgerEntry. We only block a TID that is already owned by a
+ * DIFFERENT client (i.e. cross-client collision).
  */
 export async function validateTID(
   tid: string,
@@ -515,129 +508,39 @@ export async function validateTID(
   const client = tx || prisma;
   const trimmedTid = tid.trim();
 
-  // Check if tid column exists in each table before querying
-  const [propertyTidExists, dealTidExists, clientTidExists, leadTidExists, employeeTidExists, tenantTidExists] = await Promise.all([
-    columnExists('Property', 'tid'),
-    columnExists('Deal', 'tid'),
+  // Only check for cross-client collision on Client and Lead tables.
+  // Deals and Payments are allowed to share the same TID as their parent client.
+  const [clientTidExists, leadTidExists] = await Promise.all([
     columnExists('Client', 'tid'),
     columnExists('Lead', 'tid'),
-    columnExists('Employee', 'tid'),
-    columnExists('Tenant', 'tid'),
   ]);
 
-  // Check for conflicts across Property, Deal, Client, Lead, Employee, and Tenant
-  // Only query tables where tid column exists
-  const queries: Promise<any>[] = [];
-
-  if (propertyTidExists) {
-    queries.push(
-      client.property.findFirst({
-        where: {
-          tid: trimmedTid,
-          ...(excludePropertyId ? { id: { not: excludePropertyId } } : {}),
-        },
-        select: { id: true, tid: true },
-      })
-    );
-  } else {
-    queries.push(Promise.resolve(null));
-  }
-
-  if (dealTidExists) {
-    queries.push(
-      client.deal.findFirst({
-        where: {
-          tid: trimmedTid,
-          isDeleted: false,
-          deletedAt: null,
-          ...(excludeDealId ? { id: { not: excludeDealId } } : {}),
-        },
-        select: { id: true, tid: true },
-      })
-    );
-  } else {
-    queries.push(Promise.resolve(null));
-  }
-
   if (clientTidExists) {
-    queries.push(
-      client.client.findFirst({
-        where: {
-          tid: trimmedTid,
-          isDeleted: false,
-          ...(excludeClientId ? { id: { not: excludeClientId } } : {}),
-        },
-        select: { id: true, tid: true },
-      })
-    );
-  } else {
-    queries.push(Promise.resolve(null));
+    const existingClient = await client.client.findFirst({
+      where: {
+        tid: trimmedTid,
+        isDeleted: false,
+        ...(excludeClientId ? { id: { not: excludeClientId } } : {}),
+      },
+      select: { id: true },
+    });
+    if (existingClient) {
+      throw new Error(`TID "${trimmedTid}" already belongs to another client`);
+    }
   }
 
   if (leadTidExists) {
-    queries.push(
-      client.lead.findFirst({
-        where: {
-          tid: trimmedTid,
-          isDeleted: false,
-          ...(excludeLeadId ? { id: { not: excludeLeadId } } : {}),
-        },
-        select: { id: true, tid: true },
-      })
-    );
-  } else {
-    queries.push(Promise.resolve(null));
-  }
-
-  if (employeeTidExists) {
-    queries.push(
-      client.employee.findFirst({
-        where: {
-          tid: trimmedTid,
-          isDeleted: false,
-          ...(excludeEmployeeId ? { id: { not: excludeEmployeeId } } : {}),
-        },
-        select: { id: true, tid: true },
-      })
-    );
-  } else {
-    queries.push(Promise.resolve(null));
-  }
-
-  if (tenantTidExists) {
-    queries.push(
-      client.tenant.findFirst({
-        where: {
-          tid: trimmedTid,
-          isDeleted: false,
-          ...(excludeTenantId ? { id: { not: excludeTenantId } } : {}),
-        },
-        select: { id: true, tid: true },
-      })
-    );
-  } else {
-    queries.push(Promise.resolve(null));
-  }
-
-  const [existingProperty, existingDeal, existingClient, existingLead, existingEmployee, existingTenant] = await Promise.all(queries);
-
-  if (existingProperty) {
-    throw new Error(`TID "${trimmedTid}" already exists for a property`);
-  }
-  if (existingDeal) {
-    throw new Error(`TID "${trimmedTid}" already exists for a deal`);
-  }
-  if (existingClient) {
-    throw new Error(`TID "${trimmedTid}" already exists for a client`);
-  }
-  if (existingLead) {
-    throw new Error(`TID "${trimmedTid}" already exists for a lead`);
-  }
-  if (existingEmployee) {
-    throw new Error(`TID "${trimmedTid}" already exists for an employee`);
-  }
-  if (existingTenant) {
-    throw new Error(`TID "${trimmedTid}" already exists for a tenant`);
+    const existingLead = await client.lead.findFirst({
+      where: {
+        tid: trimmedTid,
+        isDeleted: false,
+        ...(excludeLeadId ? { id: { not: excludeLeadId } } : {}),
+      },
+      select: { id: true },
+    });
+    if (existingLead) {
+      throw new Error(`TID "${trimmedTid}" already belongs to another lead`);
+    }
   }
 
   return true;

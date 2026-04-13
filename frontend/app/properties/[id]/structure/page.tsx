@@ -79,6 +79,7 @@ export default function PropertyStructurePage() {
   const [selectedFloorId, setSelectedFloorId] = useState<string | null>(null)
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null)
   const [unitForm, setUnitForm] = useState({
+    tid: "",
     unitName: "",
     unitType: "",
     status: "VACANT",
@@ -217,6 +218,7 @@ export default function PropertyStructurePage() {
     if (unit) {
       setEditingUnit(unit)
       setUnitForm({
+        tid: "",
         unitName: unit.unitName,
         unitType: unit.description || "",
         status: unit.status,
@@ -225,6 +227,7 @@ export default function PropertyStructurePage() {
     } else {
       setEditingUnit(null)
       setUnitForm({
+        tid: "",
         unitName: "",
         unitType: "",
         status: "Vacant",
@@ -267,8 +270,10 @@ export default function PropertyStructurePage() {
           description: "Unit updated successfully",
         })
       } else {
-        // Create new unit
+        // Create new unit — auto-generate TID if not provided
+        const tid = unitForm.tid.trim() || `UNIT-${Date.now()}-${Math.floor(Math.random() * 9000) + 1000}`
         await apiService.units.createForFloor(selectedFloorId, {
+          tid,
           unitName: unitForm.unitName.trim(),
           unitType: unitForm.unitType,
           status: unitForm.status,
@@ -614,6 +619,17 @@ export default function PropertyStructurePage() {
                   }
                 />
               </div>
+              {!editingUnit && (
+                <div className="space-y-2">
+                  <Label htmlFor="unitTid">Tracking ID (optional)</Label>
+                  <Input
+                    id="unitTid"
+                    placeholder="Auto-generated if left blank"
+                    value={unitForm.tid}
+                    onChange={(e) => setUnitForm({ ...unitForm, tid: e.target.value })}
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="unitType">Unit Type</Label>
                 <Select

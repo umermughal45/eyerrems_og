@@ -178,10 +178,23 @@ export class PaymentService {
       throw new Error('Cannot create payment for deleted deal');
     }
 
-    // Inherit T-ID from Deal (or generate for backward compatibility)
+    // Inherit T-ID strictly from Deal → Client lineage. Never generate a new TID here.
     let tid = deal.tid;
     if (!tid) {
-      tid = await TransactionIdentityEngine.generateTransactionID();
+      // Fallback: try to inherit from the client directly
+      if (deal.clientId) {
+        const clientRecord = await prisma.client.findUnique({
+          where: { id: deal.clientId },
+          select: { tid: true },
+        });
+        tid = clientRecord?.tid ?? null;
+      }
+      if (!tid) {
+        throw new Error(
+          `Deal ${deal.id} has no TID and its client has no TID. ` +
+          `Run the TID backfill migration before recording payments.`
+        );
+      }
     }
 
     // Validate amount

@@ -204,16 +204,13 @@ export class DealService {
     // Generate deal code
     const dealCode = await this.generateDealCode();
 
-    // TID is immutable and must be inherited from client/lead lineage.
-    // Allow explicit payload only when it matches existing client TID.
-    const clientTid = client.tid;
-    if (!clientTid && !payload.tid) {
-      throw new Error('Client TID is missing. Deal creation requires a source TID.');
-    }
-    if (payload.tid && clientTid && payload.tid !== clientTid) {
+    // STRICT: TID must always be inherited from the client. Never generate a new one here.
+    const tid = await TransactionIdentityEngine.inheritTidFromClient(payload.clientId);
+
+    // If caller explicitly passed a tid, it must match the client's tid
+    if (payload.tid && payload.tid !== tid) {
       throw new Error('Deal TID must match the linked client TID.');
     }
-    const tid = clientTid || payload.tid!;
 
     // Validate dealer is required if commission is specified
     if ((payload.commissionType && payload.commissionType !== 'none') && !payload.dealerId) {

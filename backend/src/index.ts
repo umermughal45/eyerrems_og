@@ -63,6 +63,7 @@ import currencyRoutes from './routes/currency';
 import mailRoutes from './routes/mail';
 import companyAuthRoutes from './routes/company-auth';
 import companiesRoutes from './routes/companies';
+import searchRoutes from './routes/search';
 import { csrfProtection } from './middleware/csrf';
 import { apiLoggingMiddleware } from './middleware/api-logging';
 import path from 'path';
@@ -380,6 +381,7 @@ app.use('/api/mail', mailRoutes);
 // ─── Company Isolation Layer ─────────────────────────────────────────────────
 app.use('/api/company-auth', companyAuthRoutes);
 app.use('/api/companies', companiesRoutes);
+app.use('/api/search', searchRoutes);
 
 // Health check with DB connection test
 app.get('/api/health', async (req: Request, res: Response) => {

@@ -4,10 +4,11 @@ import { useMemo, useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
-import { Home, Receipt, Wrench, FileText, Loader2, Users, Mail, Phone, Search } from "lucide-react"
+import { Home, Receipt, Wrench, FileText, Loader2, Users, Mail, Phone, Search, Plus } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { MyUnitView } from "./my-unit-view"
 import { PaymentsView } from "./payments-view"
@@ -18,6 +19,7 @@ import { TenantDashboard } from "./tenant-dashboard"
 import { PaymentHistoryView } from "./payment-history-view"
 import { OnlinePaymentView } from "./online-payment-view"
 import { TenantLedgerView } from "./tenant-ledger-view"
+import { AddTenantDialog } from "@/components/properties/add-tenant-dialog"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { apiService } from "@/lib/api"
@@ -51,6 +53,7 @@ export function TenantPortalView() {
   const [stats, setStats] = useState(DEFAULT_STATS)
   const [allTenants, setAllTenants] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [showAddTenantDialog, setShowAddTenantDialog] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -387,7 +390,13 @@ export function TenantPortalView() {
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-foreground">All Tenants</h2>
-              <Badge variant="outline">{filteredTenants.length} tenant{filteredTenants.length !== 1 ? 's' : ''}</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{filteredTenants.length} tenant{filteredTenants.length !== 1 ? "s" : ""}</Badge>
+                <Button size="sm" onClick={() => setShowAddTenantDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Tenant
+                </Button>
+              </div>
             </div>
             {loading ? (
               <div className="flex items-center justify-center py-12">
@@ -420,12 +429,7 @@ export function TenantPortalView() {
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
-                              {tenant.name
-                                ?.split(" ")
-                                .map((n: string) => n[0])
-                                .join("")
-                                .slice(0, 2)
-                                .toUpperCase() || "?"}
+                              {tenant.name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "?"}
                             </div>
                             <span className="text-foreground">{tenant.name || "N/A"}</span>
                           </div>
@@ -461,6 +465,15 @@ export function TenantPortalView() {
             )}
           </div>
         </Card>
+
+        <AddTenantDialog
+          open={showAddTenantDialog}
+          onOpenChange={setShowAddTenantDialog}
+          onSuccess={() => {
+            fetchAllTenants()
+            setShowAddTenantDialog(false)
+          }}
+        />
       </div>
     )
   }

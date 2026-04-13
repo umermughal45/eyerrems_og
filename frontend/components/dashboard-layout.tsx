@@ -106,7 +106,6 @@ const getNavigationForUser = (role: string, permissions?: string[], isSuperAdmin
           { name: "Internal Mail", href: "/mail", icon: Mail, color: "#f43f5e" },
           { name: "Support", href: "/support", icon: HelpCircle, color: "#10b981" },
           { name: "Settings", href: "/settings", icon: Settings, color: "#64748b" },
-          ...(isSuperAdmin ? [{ name: "Companies", href: "/companies", icon: Building2, color: "#8b5cf6" }] : []),
         ],
       },
     ]
@@ -139,9 +138,6 @@ const getNavigationForUser = (role: string, permissions?: string[], isSuperAdmin
   system.push({ name: "Internal Mail", href: "/mail", icon: Mail, color: "#f43f5e" })
   system.push({ name: "Support", href: "/support", icon: HelpCircle, color: "#10b981" })
   system.push({ name: "Settings", href: "/settings", icon: Settings, color: "#64748b" })
-  if (isSuperAdmin) {
-    system.push({ name: "Companies", href: "/companies", icon: Building2, color: "#8b5cf6" })
-  }
 
   const sections: NavSection[] = [{ label: "Core", items: core }]
   if (financials.length) sections.push({ label: "Financials", items: financials })
@@ -152,11 +148,61 @@ const getNavigationForUser = (role: string, permissions?: string[], isSuperAdmin
   return sections
 }
 
-export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const tidPattern = /^TRX-\d{4}-\d{6}$/i
-  // Also match lead codes (LD-0001) and client codes (CLI-0001 or LD-CLI-0001)
-  const leadCodePattern = /^LD-\d{4}$/i
+// ─── Global TID Search ───────────────────────────────────────────────────────
+function GlobalTidSearch() {
+  const router = useRouter()
+  const [query, setQuery] = useState("")
+  const [searching, setSearching] = useState(false)
+
+  // Patterns that resolve via the /ledger/tid/:tid detail page
+  const tidPattern        = /^TRX-\d{4}-\d+$/i
+  const leadCodePattern   = /^LD-\d{4}$/i
   const clientCodePattern = /^(CLI-\d{4}|LD-CLI-\d{4})$/i
+  const dealCodePattern   = /^DEAL-\d{4}$/i
+  const payCodePattern    = /^PAY-\d{4}$/i
+
+  const isResolvable = (q: string) =>
+    tidPattern.test(q) ||
+    leadCodePattern.test(q) ||
+    clientCodePattern.test(q) ||
+    dealCodePattern.test(q) ||
+    payCodePattern.test(q)
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return
+    const q = query.trim()
+    if (!q) return
+
+    if (isResolvable(q)) {
+      setSearching(true)
+      router.push(`/ledger/tid/${encodeURIComponent(q.toUpperCase())}`)
+      setQuery("")
+      setSearching(false)
+    } else {
+      router.push(`/properties?search=${encodeURIComponent(q)}`)
+      setQuery("")
+    }
+  }
+
+  return (
+    <div className="relative hidden md:block">
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      {searching && (
+        <Loader2 className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
+      )}
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={handleSearch}
+        placeholder="Search TID, CLI-0001, DEAL-0001..."
+        className="h-9 w-72 rounded-lg border border-input bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+      />
+    </div>
+  )
+}
+
+export function DashboardLayout({ children }: { children: React.ReactNode }) {
   // Load sidebar state from localStorage on mount
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -543,30 +589,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <ChevronLeft className="h-4 w-4 transition-transform duration-200" />
               )}
             </Button>
-            <div className="relative hidden md:block">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="search"
-                placeholder="Search TID, LD-0001, CLI-0001..."
-                className="h-9 w-64 rounded-lg border border-input bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    const query = (e.target as HTMLInputElement).value.trim()
-                    if (!query) return
-
-                    if (tidPattern.test(query) || leadCodePattern.test(query) || clientCodePattern.test(query)) {
-                      router.push(`/transactions/${encodeURIComponent(query.toUpperCase())}`)
-                      ;(e.target as HTMLInputElement).value = ''
-                      return
-                    }
-
-                    // Default quick search path for non-TID terms.
-                    router.push(`/properties?search=${encodeURIComponent(query)}`)
-                    ;(e.target as HTMLInputElement).value = ''
-                  }
-                }}
-              />
-            </div>
+            <GlobalTidSearch />
           </div>
           <div className="flex items-center gap-2">
             {hasAdvancedAccess && (

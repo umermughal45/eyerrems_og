@@ -325,7 +325,7 @@ router.post('/leads/create', requireAuth, requirePermission('crm.leads.create'),
       await validateManualUniqueId(manualUniqueId, 'lead');
     }
 
-    const leadTid = tid || await IdService.generateTID();
+    const leadTid = tid || await TransactionIdentityEngine.generateTransactionID();
     await validateTID(leadTid);
 
     // Generate system ID: lead-YY-####
@@ -577,7 +577,7 @@ router.post('/clients', requireAuth, requirePermission('crm.clients.create'), as
       await validateManualUniqueId(manualUniqueId, 'cli');
     }
 
-    const clientTid = tid || await IdService.generateTID();
+    const clientTid = tid || await TransactionIdentityEngine.generateTransactionID();
     await validateTID(clientTid);
 
     // Generate system ID: cli-YY-####
@@ -846,16 +846,8 @@ router.post('/deals', requireAuth, requirePermission('crm.deals.create'), async 
     // Validate TID - must be unique across Property, Deal, and Client
     // Skip uniqueness check if TID is inherited from client (it already exists on client)
     if (tid && !requestedTid) {
-      // Inherited from client — skip global uniqueness check (client already owns this TID)
-      // Just ensure no OTHER deal already has this TID
-      const existingDeal = await prisma.deal.findFirst({
-        where: { tid, isDeleted: false },
-        select: { id: true },
-      });
-      if (existingDeal) {
-        // TID already used on another deal — generate a new one
-        tid = await TransactionIdentityEngine.generateTransactionID();
-      }
+      // Inherited from client — multiple deals can share the same client TID.
+      // This is by design: one client TID covers all their deals.
     } else if (tid) {
       await validateTID(tid);
     }
