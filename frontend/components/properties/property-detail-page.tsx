@@ -24,6 +24,8 @@ import {
   Loader2,
   Eye,
   Download,
+  Edit,
+  Layers,
 } from "lucide-react"
 import { apiService } from "@/lib/api"
 import { formatCurrency } from "@/lib/utils"
@@ -36,6 +38,7 @@ import { AccountsFooterBar } from "@/components/shared/accounts-footer-bar"
 import { useToast } from "@/hooks/use-toast"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { AddPropertyDialog } from "@/components/properties/add-property-dialog"
 
 type PropertyResponse = {
   id: string | number
@@ -178,6 +181,7 @@ export function PropertyDetailPage() {
   const [uploadingAttachments, setUploadingAttachments] = useState(false)
   const [documentViewerOpen, setDocumentViewerOpen] = useState(false)
   const [selectedDocument, setSelectedDocument] = useState<{ id?: string; url: string; name: string; fileType: string } | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -507,6 +511,14 @@ export function PropertyDetailPage() {
             </div>
             <p className="text-muted-foreground mt-1">{property.location || property.address || "No location provided"}</p>
             <div className="flex flex-wrap gap-2 mt-4">
+              <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Property
+              </Button>
+              <Button variant="outline" onClick={() => router.push(`/properties/${propertyId}/structure`)}>
+                <Layers className="h-4 w-4 mr-2" />
+                Manage Structure
+              </Button>
               <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="default">
@@ -1017,6 +1029,17 @@ export function PropertyDetailPage() {
           onUpdate={fetchProperty}
         />
       )}
+
+      {/* Edit Property Dialog */}
+      <AddPropertyDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        propertyId={propertyId}
+        onSuccess={() => {
+          setEditDialogOpen(false)
+          fetchProperty()
+        }}
+      />
     </div>
   )
 }

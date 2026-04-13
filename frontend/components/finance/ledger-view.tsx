@@ -696,22 +696,14 @@ export function LedgerView({ type, id, onClose, showBackButton = true }: LedgerV
               <TableBody>
                 {filteredEntries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={(type === "dealer" || type === "client" || type === "property") ? 8 : 7} className="text-center py-12 text-muted-foreground space-y-2">
-                      {type === "dealer" ? (
-                        <>
-                          <p>No ledger entries found for this dealer.</p>
-                          {!ledgerData.summary.hasLegacyEntries && (
-                            <p className="text-sm">Create commissions or voucher payments to see entries.</p>
-                          )}
-                        </>
-                      ) : (type === "client" || type === "property") ? (
-                        <>
-                          <p>No ledger entries found.</p>
-                          <p className="text-sm">Create deals and record payments to see entries.</p>
-                        </>
-                      ) : (
-                        "No ledger entries found"
-                      )}
+                    <TableCell colSpan={(type === "dealer" || type === "client" || type === "property") ? 8 : 7}>
+                      <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                        <FileText className="h-10 w-10 opacity-20" />
+                        <p className="text-sm font-medium">No transactions yet</p>
+                        <p className="text-xs opacity-70">
+                          {type === "dealer" ? "Create commissions or voucher payments to see entries." : "Create deals and record payments to see entries."}
+                        </p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (

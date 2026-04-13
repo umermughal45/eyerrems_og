@@ -187,11 +187,13 @@ export class LedgerService {
         runningBalance += dealAmount;
         rows.push({
           id: `DEAL-${deal.id}`,
+          tid: deal.tid || null,
           clientId: deal.client?.id || null,
           clientName: deal.client?.name || 'Unassigned Client',
           propertyId: deal.property?.id || null,
           propertyName: deal.property?.name || 'Unassigned Property',
           dealTitle: deal.title,
+          dealCode: deal.dealCode || null,
           dealId: deal.id,
           paymentId: null,
           paymentType: 'deal',
@@ -209,11 +211,13 @@ export class LedgerService {
         runningBalance -= payment.amount;
         rows.push({
           id: payment.id,
+          tid: deal.tid || payment.tid || null,
           clientId: deal.client?.id || null,
           clientName: deal.client?.name || 'Unassigned Client',
           propertyId: deal.property?.id || null,
           propertyName: deal.property?.name || 'Unassigned Property',
           dealTitle: deal.title,
+          dealCode: deal.dealCode || null,
           dealId: deal.id,
           paymentId: payment.paymentId,
           paymentType: payment.paymentType || 'payment',

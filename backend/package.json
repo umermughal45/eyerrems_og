@@ -37,6 +37,8 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "apply-tid-migration": "tsx scripts/apply-tid-migration.ts",
+    "backfill-tid": "tsx scripts/backfill-unified-tid.ts",
+    "backfill-tid:apply": "tsx scripts/backfill-unified-tid.ts --apply",
     "migrate:ledger-ids:dry": "tsx scripts/migrate-immutable-ledger-ids.ts",
     "migrate:ledger-ids:apply": "tsx scripts/migrate-immutable-ledger-ids.ts --apply",
     "fix-properties-error": "tsx scripts/fix-properties-error.ts",

@@ -1116,6 +1116,11 @@ export const apiService = {
       api.get(`/finance/ledger/${type}/${id}`, { params }),
   },
 
+  // Global TID Search
+  search: {
+    byTid: (tid: string) => api.get(`/search/${encodeURIComponent(tid)}`),
+  },
+
   // Financial Reports
   financialReports: {
     trialBalance: (params?: { startDate?: string; endDate?: string }) =>

@@ -1247,7 +1247,7 @@ model Deal {
   manualUniqueId       String?              @unique
   locationId           String?
   subsidiaryOptionId   String?
-  tid                  String?              @unique
+  tid                  String?
   listingPriceSnapshot Float?
   varianceAmount       Float?
   varianceType         String?
@@ -1500,7 +1500,7 @@ model Invoice {
 model Payment {
   id                String              @id @default(uuid())
   paymentId         String              @unique
-  tid               String?             @unique
+  tid               String?
   dealId            String
   amount            Float
   paymentType       String
@@ -1536,6 +1536,7 @@ model Payment {
   @@index([date])
   @@index([refundOfPaymentId])
   @@index([deletedAt])
+  @@index([tid])
 }
 
 model TenantPayment {
